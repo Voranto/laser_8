@@ -4,7 +4,71 @@
 #include <cmath>
 #include <iomanip>
 
-
+/*
+C DESCRIPTION OF INPUT VARIABLES
+C
+C     N     = NUMBER OF NODES ACTUALLY BEING CALCULATED
+C             SHOULD INITIALLY BE LARGE ENOUGH TO ENCOMPASS
+C             LASER PENETRATION INTO MATERIAL
+C
+C     NMAX  = MAXIMUM NUMBER OF NODES THAT WILL BE USED < 240
+C             ONCE NMAX IS REACHED 12 NODES ARE EXTENDED INTO
+C             THE SLAB TO A DEPTH OF 4096 * DX
+C
+C     DX    = CONSTANT SPACE STEP USED FOR ENTIRE PROBLEM
+C
+C     NVS   = NUMBER OF TIME STEPS BETWEEN TWO AVERAGED MELT-FRONT
+C             POSITION USED IN A VELOCITY CALCULATION.
+C
+C     NVW   = NUMBER OF TIME STEPS USED IN AVERAGING THE MELT-FRONT
+C             POSITION FOR USE IN A VELOCITY CALCULATION.
+C
+C     DTOUTG= TIME STEP BETWEEN STATE GRAPH OUTPUTS
+C
+C     DTOUTD= TIME STEP BETWEEN TEMPERATURE AND ENERGY PROFILE OUTPUTS
+C
+C     TH    = HALF THE TOTAL WIDTH OF THE PULSE
+C
+C     EL    = ENERGY DENSITY OF THE PULSE
+C
+C     ALPHA = ABSORPTIVITY OF MATERIAL AT THIS WAVELENGTH
+C
+C     RS, RL= REFLECTIVITY OF SOLID AND LIQUID RESPECTIVELY
+C
+C     ISHAPE= 1  SQUARE PULSE
+C             2  TRIANGULAR PULSE
+C             3  USER SUPPLIED PULSE PROFILE - AREA MUST EQUAL 1
+C
+C     TINIT = INITIAL TEMPERATURE
+C
+C     XA    = DEPTH OF AMORPHOUS LAYER. 0 IF NONE
+C
+C     ISTART= 0  START AT TIME =0.0
+C             1  READ RESTART FILE CONTINUE FROM THESE CONDITIONS
+C
+C     TP    = TIME REQUIRED FOR SURVIVABLE NUCLEUS TO EXIST IN
+C             A REGION OF DX IN A SUPERCOOLED MELT.
+C
+C     TD    = NUCLEATION DELAY FOR FORMATION OF LARGE GRAIN POLY
+C             OFF OF FINE GRAIN POLY IN A SUPERCOOLED MELT.
+C
+C     RH0   = DENSITY OF MATERIAL ASSUMED CONSTANT OVER PHASES
+C
+C     TA    = MELT TEMPERATURE OF AMORPHOUS MATERIAL
+C
+C     HA    = LATENT HEAT OF AMORPHOUS MATERIAL
+C
+C     TN    = TEMPERATURE ABOVE WHICH A SURVIVABLE NUCLEUS CANNOT
+C             EXIST IN A SUPERCOOLED MELT
+C
+C     HC    = LATENT HEAT OF CRYSTAL AND POLYCRYSTALLINE MATERIAL
+C
+C     TC    = MELT TEMPERATURE OF CRYSTAL AND POLYCRYSTALLINE MATERIAL
+C
+C     CL    = SPECIFIC HEAT OF LIQUID MATERIAL ASSUMED CONSTANT.
+C
+C     VMAX  = MELT-FRONT VELOCITY AT WHICH AMORPHOUS MATERIAL FORMS
+*/
 
 int main(){
     
@@ -235,6 +299,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
     
     //Begin time loop
     while (true){
+        
         int NM1 = N - 1;
         if (N > NMAX){ NM1  = NMAX -1;}
 
@@ -336,12 +401,12 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             }
             else{
                 N = NMAXP;
-                E[NMAX -1 ]+= W*DT*((K[NMAX]+K[NMAX-1])*(T[NMAX]-T[NMAX-1])/3.+(K[NMAX-1]+K[NMAX - 2])*(T[NMAX - 2]-T[NMAX-1])*2./3.);
+                E[NMAX -1 ]+= W*DT*((K[NMAX]+K[NMAX-1])*(T[NMAX]-T[NMAX-1])/3.0+(K[NMAX-1]+K[NMAX - 2])*(T[NMAX - 2]-T[NMAX-1])*2.0/3.0);
                 for (int i = 1; i <= 12; i++){
                     int NI=NMAX+i;
                     KEQL=K[NI-1]+K[NI-2];
                     KEQR=K[NI]+K[NI-1];
-                    E[NI-1]+=W*DT*(KEQR*(T[NI]-T[NI-1])/3./(pow(2,(2*i)))+KEQL*(T[NI-2]-T[NI-1])/3./(pow(2,(2*i-1))));
+                    E[NI-1]+=W*DT*(KEQR*(T[NI]-T[NI-1])/3.0/(pow(2,(2*i)))+KEQL*(T[NI-2]-T[NI-1])/3.0/(pow(2,(2*i-1))));
 
                 }
 
@@ -433,7 +498,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                         }
 
                         if (TIMER1[i] > TD) ISTATE[i] = 6;
-                        if (ISTATE[i] == 6 && ISTATE[i - 1] == 3) ISTATE[i] = 7;
+                        if (ISTATE[i] == 6 && ISTATE[IM1] == 3) ISTATE[i] = 7;
                         if (TIMER2[i] > TP) ISTATE[i] = 7;
                     }
 
@@ -481,7 +546,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                 case 9:
                     T[i] = TC + (E[i] - HC) / CL;
                     if (T[i] > 3267.0) T[i] = 3267.0;
-                    K[i] = 3.2485111e-4 * T[i] + 3.8711424e-2;
+                    K[i] = 3.2435111e-4 * T[i] + 3.8711424e-2;
                     break;
 
             }
@@ -494,7 +559,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             DPTHM1=DEPTH;
             if (E[0] <= ELX1){
                 DEPTH = 0.5*DX*E[0]/HX1;
-
             }
             else{
                 for (int i = 1; i < N; i++){

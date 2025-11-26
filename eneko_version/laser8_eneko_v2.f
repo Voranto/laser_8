@@ -1,0 +1,601 @@
+C
+C                          *** LASER8 ***
+C  LASER MELTING PROGRAM
+C  ASSUMES TEMPERATURE DEPENDENT OPTICAL AND THERMAL PROPERTIES
+C  ALLOWS FOR LAYERS OF AMORPHOUS,CRYSTALLINE,AND POLYCRYSTALLINE
+C  INITIALIZE WHOLE ARRAY. CALCULATE ONLY CHANGING VALUES
+C  LET N FOLLOW PROBLEM
+C
+C  FOR MORE INFORMATION CONTACT  AL GEIST       (gst@ornl.gov)
+C                                P.O. BOX 2008
+C                                OAK RIDGE NATIONAL LABORATORY
+C                                OAK RIDGE TN  37831-6367
+C
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C
+C DESCRIPTION OF INPUT VARIABLES
+C
+C     N     = NUMBER OF NODES ACTUALLY BEING CALCULATED
+C             SHOULD INITIALLY BE LARGE ENOUGH TO ENCOMPASS
+C             LASER PENETRATION INTO MATERIAL
+C
+C     NMAX  = MAXIMUM NUMBER OF NODES THAT WILL BE USED < 240
+C             ONCE NMAX IS REACHED 12 NODES ARE EXTENDED INTO
+C             THE SLAB TO A DEPTH OF 4096 * DX
+C
+C     DX    = CONSTANT SPACE STEP USED FOR ENTIRE PROBLEM
+C
+C     NVS   = NUMBER OF TIME STEPS BETWEEN TWO AVERAGED MELT-FRONT
+C             POSITION USED IN A VELOCITY CALCULATION.
+C
+C     NVW   = NUMBER OF TIME STEPS USED IN AVERAGING THE MELT-FRONT
+C             POSITION FOR USE IN A VELOCITY CALCULATION.
+C
+C     DTOUTG= TIME STEP BETWEEN STATE GRAPH OUTPUTS
+C
+C     DTOUTD= TIME STEP BETWEEN TEMPERATURE AND ENERGY PROFILE OUTPUTS
+C
+C     TH    = HALF THE TOTAL WIDTH OF THE PULSE
+C
+C     EL    = ENERGY DENSITY OF THE PULSE
+C
+C     ALPHA = ABSORPTIVITY OF MATERIAL AT THIS WAVELENGTH
+C
+C     RS, RL= REFLECTIVITY OF SOLID AND LIQUID RESPECTIVELY
+C
+C     ISHAPE= 1  SQUARE PULSE
+C             2  TRIANGULAR PULSE
+C             3  USER SUPPLIED PULSE PROFILE - AREA MUST EQUAL 1
+C
+C     TINIT = INITIAL TEMPERATURE
+C
+C     XA    = DEPTH OF AMORPHOUS LAYER. 0 IF NONE
+C
+C     ISTART= 0  START AT TIME =0.0
+C             1  READ RESTART FILE CONTINUE FROM THESE CONDITIONS
+C
+C     TP    = TIME REQUIRED FOR SURVIVABLE NUCLEUS TO EXIST IN
+C             A REGION OF DX IN A SUPERCOOLED MELT.
+C
+C     TD    = NUCLEATION DELAY FOR FORMATION OF LARGE GRAIN POLY
+C             OFF OF FINE GRAIN POLY IN A SUPERCOOLED MELT.
+C
+C     RH0   = DENSITY OF MATERIAL ASSUMED CONSTANT OVER PHASES
+C
+C     TA    = MELT TEMPERATURE OF AMORPHOUS MATERIAL
+C
+C     HA    = LATENT HEAT OF AMORPHOUS MATERIAL
+C
+C     TN    = TEMPERATURE ABOVE WHICH A SURVIVABLE NUCLEUS CANNOT
+C             EXIST IN A SUPERCOOLED MELT
+C
+C     HC    = LATENT HEAT OF CRYSTAL AND POLYCRYSTALLINE MATERIAL
+C
+C     TC    = MELT TEMPERATURE OF CRYSTAL AND POLYCRYSTALLINE MATERIAL
+C
+C     CL    = SPECIFIC HEAT OF LIQUID MATERIAL ASSUMED CONSTANT.
+C
+C     VMAX  = MELT-FRONT VELOCITY AT WHICH AMORPHOUS MATERIAL FORMS
+C
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C
+      IMPLICIT REAL*8 (A-H,O-Z,K)
+      CHARACTER*1 NSTATE(250)
+      DIMENSION K(250),E(250),T(250),S(250),
+     &          ISTATE(250),TIMER1(250),TIMER2(250)
+C
+      DATA TIMER1/250*0.0D0/,TIMER2/250*0.0D0/
+C
+C---------------------------------------------------------------
+C  OPEN FILES FOR OUTPUT DATA
+      OPEN(1,FILE='restart.dat')
+      OPEN(2,FILE='state.dat')
+      OPEN(6,FILE='temp.dat')
+      open(7,file="temp_diag.dat")
+      open(66,file="pulse_shape.dat")
+
+C ---------------------------------------------------------------
+      
+C     
+C----------------------------------------------------------------
+C  READ IN DIMENSIONAL PARAMETERS
+      READ * ,N,NMAX,DX,NVS,NVW,DTOUTG,DTOUTD
+C
+C  READ IN LASER PULSE PARAMETERS
+      READ * ,TH,EL,ALPHA,RS,RL,ISHAPE
+C
+C  READ IN INITIAL AND BOUNDARY CONDITIONS
+      READ * ,TINIT,XA,ISTART
+C
+C  READ IN PHYSICAL PROPERTIES OF THE MATERIAL
+      READ * ,TP,TD,RH0,TA,HA,TN
+      READ * ,HC,TC,CL,VMAX
+C-----------------------------------------------------------------
+C  OUTPUT HEADING
+      PRINT 100
+  100 FORMAT(' ',23X,'LASER8',/' ',15('*'),' LASER ANNEALING ',
+     &       'MODEL ',15('*')/)
+C ----------------------------------------------------------------
+C  MISC VALUES
+      TIME=0.0D0
+      TOUTG=0.D0
+      TOUTD=0.D0
+      DEPTH=0.D0
+      DEP1 =0.D0
+      DEP2 =0.D0
+      V    =0.D0
+      VPROD=0.D0
+      VAPRE=0.D0
+      NCOUNT=0
+      ICOUNT=0
+      IFRMAX=0
+      SUMS1=0.0D0
+      PULDUR=2.0D0*TH
+      KAKL=(0.02D0+0.4D0)*.5D0
+      KCKL=(0.216D0+0.5D0)*.5D0
+      KFKL=(0.1D-1+0.5D0)*.5D0
+      K(NMAX)=1.6D0
+C  DIFMAX = LARGEST DIFFUSIVITY ENCOUNTERED IN PROBLEM
+C  FOR SILICON IT IS AT 20 DEGREES C
+      DIFMAX=1.0D0
+      RATIO=1.0D0/2.0D0
+      DT=RATIO*DX*DX/DIFMAX
+      W=0.5D0/(DX*DX*RH0)
+      SCONST=EL/(2.0D0*RH0*TH*DX)
+      RATDX2=RATIO*DX*DX*RH0
+      
+C ------------------------------------------------------------------------
+C  SWITCH CRITICAL TEMPERATURES INTO ENTHALPIES
+      EC=0.0D0
+      ELC=HC
+      ELA=CL*(TA-TC)+HC
+      EA=ELA-HA
+      DE=EA-(0.914259D0-DSQRT(0.8358693D0+.4676D-3*(TC-TA)))/.2338D-3
+      EIN=(TN-TC)*CL+HC
+      ECINIT=(.914259D0-DSQRT(.8358693D0+.4676D-3*(TC-TINIT)))/.2338D-3
+      EAINIT=ECINIT+DE
+C ------------------------------------------------------------------------
+C  INITIALIZE ARRAYS WITH IC AND BC
+      IX=0
+      IF(XA.EQ.0.0D0) GO TO 6001
+      IX=XA/DX+.5D0
+      DO 6 I=1,IX
+      T(I)=TINIT
+      E(I)=EAINIT
+      S(I)=0.0D0
+      ISTATE(I)=4
+   6  CONTINUE
+ 6001 CONTINUE
+      IX=IX+1
+      NMAXP=NMAX+13
+      DO 6000 I=IX,NMAXP
+      T(I)=TINIT
+      E(I)=ECINIT
+      S(I)=0.0D0
+      ISTATE(I)=1
+ 6000 CONTINUE
+C ---------------------------------------------------------------------
+C  FIND INITIAL ENERGY IN CELLS AT TIME 0 (ET0)
+      IF(IX.EQ.0) THEN
+	ET0=(NMAX-1)*ECINIT
+      ELSE
+        ET0=(IX-.5)*EAINIT+(NMAX-IX-.5)*ECINIT
+      ENDIF
+      DO 6010 I=1,12
+      ET0=ET0+(ECINIT)*(2**(I-2)+2**(I-1))
+ 6010 CONTINUE
+C ---------------------------------------------------------------------
+C  LOAD RESTART VECTORS
+      IF(ISTART.EQ.0) GO TO 900
+      READ(1,2100) TIME,N,DX,DT
+      READ(1,2200) (T(M2),E(M2),ISTATE(M2),M2=1,N)
+ 900  CONTINUE
+C -------------------------------------------------------------------
+C  CALCULATE INITIAL CONDUCTIVITIES (K)
+      DO 9 I=1,NMAXP
+      IPHASE=ISTATE(I)
+      GO TO (14,14,14,44,54,64,74,84,84),IPHASE
+  14  K(I)=DEXP(-.399671D-2*T(I)+.365786D0)+.225894D0
+      GO TO 9
+  44  K(I)=0.02D0
+      GO TO 9
+  54  K(I)=KAKL
+      GO TO 9
+  64  K(I)=KCKL
+      GO TO 9
+  74  K(I)=KFKL
+      GO TO 9
+  84  K(I)=3.2435111D-4*T(I)+3.8711424D-2
+   9  CONTINUE
+C --------------------------------------------------------------------
+C  STORE INITIAL STATE OF CELL 1 FOR CALCULATION OF MELT DEPTH
+      IF(ISTATE(1).EQ.4 ) THEN
+	EX1=EA
+	ELX1=ELA
+	HX1=HA
+      ELSE
+	EX1=EC
+	ELX1=ELC
+	HX1=HC
+      ENDIF
+C --------------------------------------------------------------------
+C  CALCULATE PERCENT OF ENERGY ABSORBED IN EACH CELL
+C  ASSUMING IT IS GENERATED IN THE SURFACE LAYERS
+C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
+      DPTH1=0.D0
+      DO 7 I=1,N
+      DPTH2=DX*(I-.5D0)
+      IF(DPTH2.GE.5.D-5) GO TO 7000
+      S(I)=DEXP(-ALPHA*DPTH1)-DEXP(-ALPHA*DPTH2)
+      DPTH1=DPTH2
+   7  CONTINUE
+ 7000 CONTINUE
+C -----------------------------------------------------------------------------
+C  OUTPUT INPUT VALUES
+      PRINT 110
+      PRINT 120 ,N,NMAX,DX,DTOUTG,DTOUTD,TH,EL,ALPHA,RS,RL,
+     &          ISHAPE,TP,TD,RH0,TA,HA,TN,HC,TC,CL,VMAX
+  110 FORMAT('   NAME        ALL UNITS KG W J CM SEC'/)
+  120 FORMAT('   DIMEN',/'  N=',I3,' NMAX=',I3,' DX=',D10.4,
+     &       ' DTOUTG=',D10.4,' DTOUTD=',D10.4,//
+     &       '    PULSE',/
+     &       '  HALF WIDTH (TH)=',D10.4,' LASER ENERGY (EL)=',D10.4,/
+     &       '  ALPHA=',D10.4,' REFLECTIVITY(RS)=',F5.3,
+     &       ' REFLECTIVITY(RL)=',F5.3,' ISHAPE=',I2,//'   MATPRP',/
+     &       '  NUCLEATION TIME (TP)=',D10.4,
+     &       ' NUCLEATION DELAY (TD)=',D10.4,/'  DENSITY (RH0)=',F5.3,/
+     &       '  TCR AMORPHOUS (TA)=',F6.1,' LATENT HEAT (HA)=',F6.1,/
+     &       '  NUCLEATION TEMP (TN)=',F6.1,' LATENT HEAT (HC)=',F6.1,
+     &      /'  TCR CRYSTAL (TC)=',F6.1,' SPECIFIC HEAT (L)=',F6.3,
+     &       ' VMAX =',F6.1)
+C ---------------------------------------------------------------------------
+C  OUTPUT INITIAL VALUES
+      PRINT 150 ,TIME,DT
+      PRINT 205
+      PRINT 210 , (T(M2),M2=1,NMAX)
+      PRINT 215
+      PRINT 170 ,(E(M2),M2=1,NMAX)
+  150 FORMAT(' ',//'  TIME =',D13.5,' SEC    DT=',D13.5)
+  170 FORMAT(' ',(12X,10(D10.4,1X)))
+C --------------------------------------------------------------------------
+C  OUTPUT HEADING FOR LINE PRINTER GRAPH OF STATE VS  TIME
+      WRITE(2,220)
+      WRITE(2,230) DX
+ 230  FORMAT(' ',/'    TIME (SEC)',15X,'DEPTH (',D11.5,' CM)'//,17X,
+     &      '0',8X,'10',8X,'20',8X,'30',8X,'40',8X,'50',8X,'60',8X,
+     &      '70')
+C
+C ==========================================================================
+C
+C  BEGIN TIME LOOP
+  27  NM1=N-1
+      IF(N.GT.NMAX) NM1=NMAX-1
+C -----------------------------------------------------------
+C  FIND SURFACE REFLECTIVITY (R0)
+      IPHASE=ISTATE(1)
+      GO TO (12,12,12,12,52,62,62,92,92),IPHASE
+  12  R0=RS
+      GO TO 1000
+  52  SF=(ELA-E(1))/HA
+      R0=RS*SF+RL*(1.0D0-SF)
+      GO TO 1000
+  62  SF=(ELC-E(1))/HC
+      R0=RS*SF+RL*(1.0D0-SF)
+      GO TO 1000
+  92  R0=RL
+C ------------------------------------------------------------
+C  CALCULATE ABSORBED LASER ENERGY PROFILE
+ 1000 IF (TIME.GT.PULDUR) GO TO 840
+C  DEFAULT IS SQUARE PULSE
+      S1=SCONST*DT*(1.0D0-R0)
+      GO TO (86,87,89),ISHAPE
+C  TRIANGULAR PULSE
+  87  TD = 0.25D0*TH
+      IF(TIME.LE.TD) S1=2.0D0*S1*TIME/TD
+      IF(TIME.GT.TD) S1=2.0D0*S1*(1.0D0-((TIME-TD)/(PULDUR-TD)))
+      GO TO 86
+C  USER SUPPLIED NORMALIZED PROFILE (AREA UNDER CURVE = 1)
+C  THIS IS AN EXCIMER PROFILE
+ 89   IF(TIME.LT.PULDUR/3.0D0) GO TO 841
+        S1=S1*PULDUR*(7.84728D7+TIME*(-2.33377D15+1.74295D22
+     &                                           *TIME))
+      GO TO 86
+ 841  IF(TIME.LT.0.6D0*PULDUR/3.0D0) GO TO 842
+        S1=S1*PULDUR*(2.74602D7+TIME*(4.03853D14-1.91274D22
+     &                                           *TIME))
+      GO TO 86
+ 842  S1=S1*PULDUR*(2.46685D6+TIME*(3.45003D15+1.11884D23
+     &                                           *TIME))
+      GO TO 86
+C
+ 840  S1=0.0D0
+  86  CONTINUE
+      SUMS1=SUMS1+S1
+
+      write(66,265) TIME, S1
+C ---------------------------------------------------------------------
+C  UPDATE ENERGY (E) BY ROSES SCHEME
+      E(1)=E(1)+2.0D0*(W*DT*(K(1)+K(2))*(T(2)-T(1))+S1*S(1))
+      DO 2 I=2,NM1
+      KEQL=(K(I-1)+K(I))
+      KEQR=(K(I)+K(I+1))
+      E(I)=E(I)+W*DT*(KEQR*(T(I+1)-T(I))
+     &             +KEQL*(T(I-1)-T(I))) +S(I)*S1
+   2  CONTINUE
+C
+C  CHECK FOR SIGNIFICANT DIFFUSION INTO MATERIAL
+C  ADD RIGHTMOST NODE AS NECESSARY
+      IF(N.LT.IX) GO TO 580
+      DELTAE=ECINIT+.25D0
+      GO TO 581
+ 580  DELTAE=EAINIT+.25D0
+ 581  CONTINUE
+      IF(E(NM1).LT.DELTAE) GO TO 1400
+      IF(N.GE.NMAX) GO TO 57
+C  ADD NODE
+      N=N+1
+      GO TO 1400
+C  IF NMAX REACHED FIND E(NMAX) BY EXTENDING 12 NODES DEEP INTO THE SLAB
+C  EACH NODE IS TWICE AS WIDE AS THE PREVIOUS ONE
+C  THE EXPANSION RATE IS ADJUSTED WITH THE 2**I TERMS
+  57  N=NMAXP
+      E(NMAX)=E(NMAX)+W*DT*((K(NMAX+1)+K(NMAX))*(T(NMAX+1)-T(NMAX))/3.
+     &                  +(K(NMAX)+K(NMAX-1))*(T(NMAX-1)-T(NMAX))*2./3.)
+      DO 1401 I=1,12
+      NI=NMAX+I
+      KEQL=K(NI)+K(NI-1)
+      KEQR=K(NI+1)+K(NI)
+      E(NI)=E(NI)+W*DT*(KEQR*(T(NI+1)-T(NI))/3./(2**(2*I))
+     &                 +KEQL*(T(NI-1)-T(NI))/3./(2**(2*I-1)))
+ 1401 CONTINUE
+ 1400 CONTINUE
+C -------------------------------------------------------------------------
+C
+C  UPDATE NODE STATES :    1=CRYSTAL   2=LARGE POLY 3=FINE POLY
+C                          4=AMORPHOUS 5=MUSHY4     6=MUSHY1
+C                          7=MUSHY3    8=LIQUID     9=SUPERCOOLED
+      DO 1100 I=1,NM1
+      IF(I.EQ.1) THEN
+	IM1=2
+      ELSE
+        IM1=I-1
+      ENDIF
+      IPHASE=ISTATE(I)
+      GO TO (10,10,30,40,50,60,70,80,90),IPHASE
+  10  IF(E(I).GE.EC) ISTATE(I)=6
+      GO TO 1100
+  30  IF(E(I).GE.EC) ISTATE(I)=7
+      GO TO 1100
+  40  IF(E(I).GE.EA) ISTATE(I)=5
+      GO TO 1100
+  50  IF(E(I).LT.EA) ISTATE(I)=4
+      IF(E(I).GE.ELA ) ISTATE(I)=9
+      GO TO 1100
+  60  IF(E(I).GT.ELC) GO TO 601
+      IF(E(I).LT.EC)  GO TO 602
+      IF(V .GE. -VMAX) GO TO 1100
+      IF(E(I).GT.EA) ISTATE(I)=5
+      IF(E(I).GT.ELA) ISTATE(I)=9
+      GO TO 1100
+ 601  ISTATE(I)=8
+      GO TO 1100
+ 602  IF(ISTATE(I+1).EQ.1 .OR. ISTATE(IM1).EQ.1) GO TO 603
+      ISTATE(I)=2
+      GO TO 1100
+ 603  ISTATE(I)=1
+      GO TO 1100
+  70  IF(E(I).LT.EC) ISTATE(I)=3
+      IF(E(I).GT.ELC) ISTATE(I)=8
+      GO TO 1100
+  80  IF(E(I).LT.ELC) GO TO 801
+      GO TO 1100
+ 801  IF(ISTATE(I+1).LT.4 .OR. ISTATE(IM1).LT.4) GO TO 802
+      ISTATE(I)=9
+      GO TO 1100
+ 802  ISTATE(I)=6
+      GO TO 1100
+  90  IF(E(I).GE.ELC) GO TO 906
+      IF(E(I).LT.ELA) GO TO 905
+      IF(E(I).LT.EIN) GO TO 901
+      TIMER2(I)=0.D0
+      GO TO 902
+ 901  TIMER2(I)=TIMER2(I)+DT
+ 902  IF(ISTATE(I+1).EQ.1) GO TO 907
+      IF(ISTATE(I+1).LT.4 .OR. ISTATE(IM1).LT.4) GO TO 903
+      TIMER1(I)=0.D0
+      GO TO 904
+ 903  TIMER1(I)=TIMER1(I)+DT
+ 904  IF(TIMER1(I).GT.TD) ISTATE(I)=6
+      IF(ISTATE(I).EQ.6 .AND. ISTATE(I-1).EQ.3) ISTATE(I)=7
+      IF(TIMER2(I).GT.TP) ISTATE(I)=7
+      GO TO 1100
+ 905  ISTATE(I)=5
+      GO TO 1100
+ 906  ISTATE(I)=8
+      GO TO 1100
+ 907  ISTATE(I)=6
+1100  CONTINUE
+C ------------------------------------------------------------------------
+C
+C  DETERMINE CONDUCTIVITIES (K)  *** HARDWIRED FOR SILICON ***
+C  DETERMINE TEMPERATURES (T)
+      DO 1 I=1,N
+      IPHASE=ISTATE(I)
+      GO TO (11,11,31,41,51,61,71,81,81),IPHASE
+  11  T(I)=1410+E(I)*(.9142589998D0-1.169196D-4*E(I))
+      K(I)=DEXP(-.00399671D0*T(I)+.365786D0)+.225894D0
+      GO TO 1
+  31  T(I)=1410+E(I)*(.9142589998D0-1.169196D-4*E(I))
+      K(I)=.10D0
+      GO TO 1
+  41  EI=E(I)-DE
+      T(I)=1410+EI*(.9142589998D0-1.169196D-4*EI)
+      K(I)=0.015D0
+      GO TO 1
+  81  T(I)=TC+(E(I)-HC)/CL
+      IF(T(I).GT.3267.D0) T(I)=3267.D0
+      K(I)=3.2485111D-4*T(I)+3.8711424D-2
+      GO TO 1
+  51  T(I)=TA
+      K(I)=KAKL
+      GO TO 1
+  61  T(I)=TC
+      K(I)=KCKL
+      GO TO 1
+  71  T(I)=TC
+      K(I)=KFKL
+   1  CONTINUE
+C ----------------------------------------------------------------------
+C
+C  FIND DEPTH OF FRONT CLOSEST TO THE SURFACE
+      IF(E(1).LT.EX1) GO TO 894
+      DPTHM1=DEPTH
+      IF(E(1).GT.ELX1) GO TO 891
+      DEPTH=0.5D0*DX*E(1)/HX1
+      GO TO 894
+  891 DO 892 I=2,N
+      IF(ISTATE(I).GT.4 .AND. ISTATE(I).LT.8) GO TO 893
+      IF(ISTATE(I).LT.5) GO TO 897
+  892 CONTINUE
+      GO TO 894
+C
+C  NEXT THREE STATEMENTS ARE FOR MELT FRONT AT CELL BOUNDARY
+  897 IFRNT=I
+      DEPTH=DX*(IFRNT-1.5D0)
+      GO TO 894
+  893 IFRNT=I
+      HX=HC
+      IF(ISTATE(I).EQ.4) HX=HA
+      DEPTH=DX*(I-1.5D0)+DX*E(I)/HX
+  894 CONTINUE
+C
+C  CALCULATE VELOCITY OF THE FRONT CLOSEST TO SURFACE
+      VAPRE=V
+      NCOUNT=NCOUNT+1
+      IF(NCOUNT.LE.(NVS-NVW/2)) GO TO 895
+      DEP2=DEP2+DEPTH
+      IF(NCOUNT.NE.(NVS+NVW/2)) GO TO 895
+      V=((DEP2/NVW)-(DEP1/NVW))/(NVS*DT)
+      DEP1=DEP2
+      DEP2=0.D0
+      NCOUNT=0
+C
+C  ESTABLISH MAXIMUM MELT-FRONT PENETRATION AND TIME
+      VPROD=V*VAPRE
+      IF(VPROD.GE.0.D0 .OR. ICOUNT.EQ.1) GO TO 895
+      SHAPEDEPMAX=DEPTH
+      TMAX=TIME
+      IFRMAX=IFRNT
+      ICOUNT=1
+  895 CONTINUE
+C -------------------------------------------------------------------
+C  TAKE NEXT TIME STEP
+      TIME=TIME + DT
+      TOUTG=TOUTG+DT
+      TOUTD=TOUTD+DT
+C -------------------------------------------------------------------
+C  INCREASE TIME STEP TO MAXIMUM ALLOWED BY STABILITY CRITERION
+      CPNMAX=1.00478D0+E(NMAX)*(-8.62645D-5
+     &                        -2.51611D-7*E(NMAX))
+      IF(T(NMAX).GT.1000) CPNMAX=1.D0
+      DT=RATDX2*CPNMAX/K(N)
+C       DT=6.0D-13
+C       DT = 6.0D-16
+C -------------------------------------------------------------------
+C
+C  TIME TO OUPUT TEMPERATURE AND ENERGY PROFILES ?
+      IF(TOUTD .LT. DTOUTD) GO TO 3500
+      TOUTD=0.0D0
+C                       SUM ENERGY STORED IN FIRST NMAX+12 CELLS
+      SUME=.5D0*E(NMAX)+.5D0*E(1)
+      NXM1=NMAX-1
+      DO 180 I=2,NXM1
+        SUME=SUME+E(I)
+  180 CONTINUE
+      DO 190 I=1,12
+        SUME=SUME+(E(NMAX+I)+E(NMAX+I-1))*
+     &            (2**(I-3)+2**(I-2))
+  190 CONTINUE
+      SUME=(SUME-ET0)*DX*RH0
+      SUMSX=SUMS1*DX*RH0
+C                     SOME ENERGY ESCAPES OUT FIXED TEMP BACK BC
+      PRINT 200 , TIME,N,V,DEPMAX,TMAX,DEPTH
+      PRINT 211 , SUMSX,SUME
+      PRINT 205
+      PRINT 210 , (T(M2),M2=1,N)
+      PRINT 215
+      PRINT 210 , (E(M3),M3=1,N)
+C
+  200 FORMAT(' ',//'  TIME =',D13.5,' SEC   N=',I4,' V =',
+     &       F8.1,/' DEPMAX=',D13.5,' TMAX=',D13.5,
+     &       ' DEPTH=',D13.5)
+  211 FORMAT(' ', 'LASER ENERGY IN =',D13.5,
+     &         '    ENERGY IN NMAX+12 CELLS =',D13.5)
+  210 FORMAT(' ',(12X,10(D10.4,1X)))
+  225 FORMAT(' ',(12X,10(A1,11X)))
+  205 FORMAT(' ',' TEMPERATURE')
+  215 FORMAT(' ',' ENTHALPY')
+  220 FORMAT(' ',' STATE A=AMORPHOUS C=CRYSTAL P=LARGE POLY',
+     &       ' F=FINE POLY M=MUSHY L=LIQUID S=SUPERCOOLED')
+C ----------------------------------------------------------------------
+C  TIME TO OUTPUT STATES ?
+ 3500 IF(TOUTG .LT. DTOUTG) GO TO 27
+      TOUTG=0.D0
+C  PREPARE OUTPUT STATE ARRAY
+      DO 1200 I=1,N
+      IPHASE=ISTATE(I)
+      GO TO (13,23,33,43,53,53,53,83,93),IPHASE
+   13 NSTATE(I)='C'
+      GO TO 1200
+   23 NSTATE(I)='P'
+      GO TO 1200
+   33 NSTATE(I)='F'
+      GO TO 1200
+   43 NSTATE(I)='A'
+      GO TO 1200
+   53 NSTATE(I)='M'
+      GO TO 1200
+   83 NSTATE(I)='L'
+      GO TO 1200
+   93 NSTATE(I)='S'
+ 1200 CONTINUE
+C
+C  OUTPUT LINE PRINTER GRAPH OF STATE VS TIME
+      NG=MIN(N,100)
+      WRITE(2,235) TIME,(NSTATE(M1), " ",M1=1,N)
+  235 FORMAT(' ',D13.5,3X,500(A1))
+      write(7,265) TIME, (T(M4),M4=1,N)
+  265 format(" ", D20.14,3X,500(F7.2,1X))
+
+C ---------------------------------------------------------------------
+C
+C  CHECK IF TIME TO STOP
+      IF(TIME .LT. PULDUR) GO TO 27
+      DO 1300 I=1,N
+      IF(ISTATE(I).GT.4) GO TO 27
+ 1300 CONTINUE
+C ===========================================================================
+C
+C  WRITE OUT RESTART VECTORS
+ 112  WRITE(1,2100) TIME,N,DX,DT
+      WRITE(1,2200) (T(M2),E(M2),ISTATE(M2),M2=1,N)
+ 2100 FORMAT(' ',D20.14,I5,D13.5,D13.5)
+ 2200 FORMAT(' ',(D20.14,5X,D20.14,5X,I2))
+C      write(7,265) TIME, (T(M4),M4=1,N)
+C 265  format(" ", D20.14,3X,10(F7.2,1X))
+      CLOSE (1)
+      CLOSE (2)
+      CLOSE (6)
+      close(7)
+      close(66)
+      STOP
+      END
+C ----------------- sample laser8 input file ---------------------------
+
+C 10,20,1.D-6,500,100,1.D-9,1.D-9                    N,NMAX,DX,NR,DR,IVS,IVW
+C 33.5D-9,1.5D0,1.D6,.58D0,.69D0,3                 TH,EL,ALPHA,RS,RL,ISHAPE
+C 20.0D0,0.D0,0                                 TINIT,XA,ISTART
+C 4.D-9,8.D-9,2.33D0,1260.D0,1318.8D0,1310.D0     TP,TD,RH0,TA,HA,TN
+C 1799.1D0,1410.D0,1.0D0,1500.D0                  HC,TC,CL,VMAX
+
+

@@ -1,0 +1,6 @@
+Primary Issue: We want to achieve a parameter set that when having a low VMAX it becomes amorphous but with a high VMAX it stays cristallized. 
+
+- First important solve: When the supercooled state reached the surface, there was an edge case triggering it making the depth calculation completely wrong. A simple fix in line 579 prevented triggering this
+- Second issue seen: When changing the direction of the velocity (when the liquid/supercooled state starts reverting into mushy/crystal), 
+	there is a couple edge points where the distance calculated is way bigger than it should be, causing a massive swing in velocity in 
+	both directions (positive and negative). Tweaking the input parameters can alleviate this, but not fully fix it. Still work to do

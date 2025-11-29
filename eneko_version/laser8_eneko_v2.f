@@ -93,10 +93,7 @@ C  OPEN FILES FOR OUTPUT DATA
       OPEN(6,FILE='temp.dat')
       open(7,file="temp_diag.dat")
       open(66,file="pulse_shape.dat")
-
-C ---------------------------------------------------------------
-      
-C     
+C
 C----------------------------------------------------------------
 C  READ IN DIMENSIONAL PARAMETERS
       READ * ,N,NMAX,DX,NVS,NVW,DTOUTG,DTOUTD
@@ -143,7 +140,6 @@ C  FOR SILICON IT IS AT 20 DEGREES C
       W=0.5D0/(DX*DX*RH0)
       SCONST=EL/(2.0D0*RH0*TH*DX)
       RATDX2=RATIO*DX*DX*RH0
-      
 C ------------------------------------------------------------------------
 C  SWITCH CRITICAL TEMPERATURES INTO ENTHALPIES
       EC=0.0D0

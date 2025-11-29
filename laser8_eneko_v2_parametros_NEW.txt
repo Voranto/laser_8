@@ -1,0 +1,47 @@
+193 nm, 20 ns, melt duration 35 ns -- C++ Formatted version
+200 200 2.e-7 120 100 1.e-9 10.0e-9
+14.5e-9 0.913e0 1.89e6 0.66e0 0.7 2
+20 0 0
+4.e-9 8.e-9 2.33e0 1260.e0 1318.8e0 1310.e0
+1799.1e0 1410.e0 1.0e0 1000.e0
+
+
+-----------------------------CURRENT BEST WORKING PARAMETER SET ---------------------------------
+800 nm, fs excitation, 45% reduced fluences, short absorption depth (10 nm) -- C++ Formatting
+200 200 1.e-7 2 2 1.e-11 10.0e-11
+800.0e-15 0.116e0 1.0e5 .159e0 .159e0 2
+20 0 0
+4.e-9 8.e-9 2.33e0 1260.e0 1318.8e0 1310.0e0
+1799.1e0 1410.e0 1.0e0 1500.e0
+-------------------------------------------------------------------------------------------------
+
+
+N,NMAX,DX,NVS,NVW,DTOUTG,DTOUTD	(nodes, max nodes, space step, # time steps two positions, # time steps velocity, time step graph, time step energy)
+TH,EL,ALPHA,RS,RL,ISHAPE 	(half of total width, fluence in J, inv of penetration depth in cm-1, Rsolid, Rliquid=Rsolid(for fs), pulse shape (2 for triangular)
+TINIT,XA,ISTART 		(initial temp, depth of amorphous layer, start time (0 for single pulse))
+TP,TD,RH0,TA,HA,TN 		(nuclei lifetime, nucleation delay poly, density, melt temp aSi, latent heat aSi, Tcrit nuclei)
+HC,TC,CL,VMAX 			(latent heat cryst, melt temp cryst, specific heat melt, velocity amorphization)
+
+800 nm, fs excitation, 45% reduced fluences, short absorption depth (10 nm)
+
+200,200,2.D-7,120,100,1.D-11,10.0D-11
+800.0D-15,0.116D0,1.0D5,.159D0,.159D0,2
+20.0D0,0.D0,0
+4.D-9,8.D-9,2.33D0,1260.D0,1318.8D0,1310.0D0
+1799.1D0,1410.D0,1.0D0,100.D0
+
+193 nm, 20 ns, melt duration 35 ns
+
+200,200,2.D-7,120,100,1.D-9,10.0D-9
+14.5D-9,0.913D0,1.89D6,.66D0,.7D0,2
+20.0D0,0.D0,0
+4.D-9,8.D-9,2.33D0,1260.D0,1318.8D0,1310.D0
+1799.1D0,1410.D0,1.0D0,1500.D0
+
+355 nm, 4 ns, umbral 0.2J/cm^2
+
+200,200,2.D-7,120,100,1.D-10,10.0D-9
+2.0D-9,0.2D0,1.06D6,.576D0,.69D0,2
+20.0D0,0.D0,0
+4.D-9,8.D-9,2.33D0,1260.D0,1318.8D0,1310.D0
+1799.1D0,1410.D0,1.0D0,1500.D0

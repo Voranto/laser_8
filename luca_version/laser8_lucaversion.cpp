@@ -18,7 +18,7 @@ C
 C     DX    = CONSTANT SPACE STEP USED FOR ENTIRE PROBLEM
 C
 C     NVS   = NUMBER OF TIME STEPS BETWEEN TWO AVERAGED MELT-FRONT
-C             POSITION USED IN A VELOCITY CALCULATION.
+            C             POSITION USED IN A VELOCITY CALCULATION.
 C
 C     NVW   = NUMBER OF TIME STEPS USED IN AVERAGING THE MELT-FRONT
 C             POSITION FOR USE IN A VELOCITY CALCULATION.
@@ -89,6 +89,12 @@ int main(){
 
     std::ofstream f_restart("restart.dat");
     std::ofstream f_state("state.dat");
+    /*New files to plot velocity, and depths
+    */
+    std::ofstream f_velocity("velocity.dat");
+    std::ofstream f_depth1("depth1.dat");
+    std::ofstream f_depth2("depth2.dat");
+
     std::ofstream f_temp("temp.dat");
     std::ofstream f_temp_diag("temp_diag.dat");
     std::ofstream f_pulse("pulse_shape.dat");
@@ -96,22 +102,22 @@ int main(){
 
     // Read dimensional parameters
     std::cin >> N >> NMAX >> DX >> NVS >> NVW >> DTOUTG >> DTOUTD;
-    //std::cout << N << " " <<NMAX <<" " << DX << " " <<NVS << " " <<NVW << " " <<DTOUTG << " " <<  DTOUTD << std::endl;
+    std::cout << N << " " <<NMAX <<" " << DX << " " <<NVS << " " <<NVW << " " <<DTOUTG << " " <<  DTOUTD << std::endl;
     // Read laser pulse parameters
     std::cin >> TH >> EL >> ALPHA >> RS >> RL >> ISHAPE;
-    //std::cout << TH <<" " << EL <<" " << ALPHA <<" " << RS <<" " << RL <<" " << ISHAPE<< std::endl;
+    std::cout << TH <<" " << EL <<" " << ALPHA <<" " << RS <<" " << RL <<" " << ISHAPE<< std::endl;
     // Read IC + BC
     std::cin >> TINIT >> XA >> ISTART;
-    //std::cout << TINIT <<" " << XA <<" " << ISTART << std::endl;
+    std::cout << TINIT <<" " << XA <<" " << ISTART << std::endl;
 
     // Physical material properties
     std::cin >> TP >> TD >> RH0 >> TA >> HA >> TN;
-    //std::cout << TP <<" " << TD <<" " << RH0 <<" " << TA <<" " << HA <<" " << TN << std::endl;
+    std::cout << TP <<" " << TD <<" " << RH0 <<" " << TA <<" " << HA <<" " << TN << std::endl;
 
     std::cin >> HC >> TC >> CL >> VMAX;
-    //std::cout << HC <<" " << TC <<" " << CL <<" " << VMAX << std::endl;
+    std::cout << HC <<" " << TC <<" " << CL <<" " << VMAX << std::endl;
 
-
+    
 
     //MISC VALUES
     double TIME = 0.0;
@@ -133,7 +139,11 @@ int main(){
 
     double DIFMAX = 1.0;      // largest diffusivity
     double RATIO = 1.0 / 2.0;
-    double DT = RATIO * DX * DX / DIFMAX;
+
+    /*
+    *TEMPORAL ADDITION: Multiplied DT by 10 for further testing
+    */
+    double DT = 10 * RATIO * DX * DX / DIFMAX ;
 
 
 
@@ -156,6 +166,10 @@ int main(){
 
     double EAINIT = ECINIT + DE;
     
+
+
+    std::cout << "EC=" << EC << " ELC=" << ELC << " ELA=" << ELA 
+          << " EA=" << EA << " EIN=" << EIN << std::endl;
     // -----------------------------
     // Initialize arrays with IC + BC
     // -----------------------------
@@ -295,8 +309,12 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         << std::scientific << std::setprecision(5) << std::setw(11) << DX 
         << " CM)\n";
 
-
-    
+    f_velocity << "    TIME (SEC)"
+        << std::setw(15) << "VELOCITY" << std::endl;
+    f_depth1 << "    TIME (SEC)"
+        << std::setw(15) << "DEPTH" << std::endl;
+    f_depth2 << "    TIME (SEC)"
+        << std::setw(15) << "DEPTH" << std::endl;
     //Begin time loop
     while (true){
         
@@ -430,7 +448,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             }
 
             int IPHASE = ISTATE[i];
-
             switch (IPHASE) {
                 case 1:
                 case 2:
@@ -459,7 +476,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                         else
                             ISTATE[i] = 2;
                     } else {
-                        if (V >= -VMAX) break;  
+                        if (V >= -VMAX) {break; } 
                         if (E[i] > EA) ISTATE[i] = 5;
                         if (E[i] > ELA) ISTATE[i] = 9;
                     }
@@ -492,13 +509,14 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                             ISTATE[i] = 6; 
                             break;
                         } else if (ISTATE[i + 1] < 4 || ISTATE[IM1] < 4) {
-                            TIMER1[i] = 0.0;
-                        } else {
                             TIMER1[i] += DT;
+                        } else {
+                            
+                            TIMER1[i] = 0.0;
                         }
 
                         if (TIMER1[i] > TD) ISTATE[i] = 6;
-                        if (ISTATE[i] == 6 && ISTATE[IM1] == 3) ISTATE[i] = 7;
+                        if (ISTATE[i] == 6 && ISTATE[i-1] == 3) ISTATE[i] = 7;
                         if (TIMER2[i] > TP) ISTATE[i] = 7;
                     }
 
@@ -546,7 +564,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                 case 9:
                     T[i] = TC + (E[i] - HC) / CL;
                     if (T[i] > 3267.0) T[i] = 3267.0;
-                    K[i] = 3.2435111e-4 * T[i] + 3.8711424e-2;
+                    K[i] = 3.2485111e-4 * T[i] + 3.8711424e-2;
                     break;
 
             }
@@ -557,25 +575,34 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         double  HX;
         if (E[0] >= EX1){
             DPTHM1=DEPTH;
-            if (E[0] <= ELX1){
+
+            /*UPDATE BY: Luca Siegel Moreno
+            * This edge case was thought for when the surface is half molten, not for supercooled, but 
+            * was being triggered in supercooled state. So a change was made to include correct supercooled 
+            * computation at the surface
+            */
+            if (E[0] <= ELX1 && ISTATE[0] != 9){
                 DEPTH = 0.5*DX*E[0]/HX1;
             }
             else{
                 for (int i = 1; i < N; i++){
                     if (ISTATE[i] > 4 && ISTATE[i] < 8){
-                        IFRNT=i+1;
+                        IFRNT=i;
                         HX=HC;
                         if(ISTATE[i] == 4) HX=HA;
-                        DEPTH=DX*(i-1.5e0)+DX*E[i]/HX;
+                        DEPTH=DX*(i+1-1.5e0)+DX*E[i]/HX;
+                        break;
                     }
                     if(ISTATE[i] < 5){
-                        IFRNT=i+1;
-                        DEPTH=DX*(IFRNT-1.5e0);
+                        IFRNT=i;
+                        DEPTH=DX*(IFRNT + 1-1.5e0);
+                        break;
                     }
                 }
             }
         }
 
+        
 
         VAPRE = V;
         NCOUNT=NCOUNT+1;
@@ -584,7 +611,17 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         if(NCOUNT >= (NVS-NVW/2)){
             DEP2=DEP2+DEPTH;
             if(NCOUNT == (NVS+NVW/2)){
-                V=((DEP2/NVW)-(DEP1/NVW))/(NVS*DT);
+                f_depth1 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+                f_depth1 << DEP1 << std::endl;
+
+                f_depth2 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+                f_depth2 << DEP2 << std::endl;
+                /*
+                * UPDATE MADE BY: Luca Siegel
+                * The computation should be made for NVW + 1 windows because the 
+                * counter starts at 0 and ends at NVW, so in total NVW + 1
+                */
+                V=((DEP2/(NVW+1))-(DEP1/(NVW+1)))/(NVS*DT);
                 DEP1=DEP2;
                 DEP2=0.e0;
                 NCOUNT=0;
@@ -602,7 +639,9 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         TIME=TIME + DT;
         TOUTG=TOUTG+DT;
         TOUTD=TOUTD+DT;
-
+        if (TIME > 2.31269e-09){
+            int caca = 0;
+        }
 
         double CPNMAX=1.00478+E[NMAX -1 ]*(-8.62645e-5-2.51611e-7*E[NMAX  - 1]);
         
@@ -655,7 +694,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                     case 9:
                         NSTATE[i] = 'S';
                         break;
-                    
                 }
             }
         }
@@ -671,6 +709,11 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         }
         f_state << "\n";
 
+        f_velocity << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        f_velocity << V << std::endl;
+
+        
+        
     // --- WRITE temp_diag.dat ---
         f_temp_diag << " " << std::setw(20) << std::scientific << std::setprecision(14) << TIME << "   ";
         for (int m4 = 0; m4 < N; ++m4) {

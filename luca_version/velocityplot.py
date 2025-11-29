@@ -23,7 +23,7 @@ axes[0,0].set_xlabel('Time (s)')
 axes[0,0].set_ylabel('Velocity')
 axes[0,0].set_title('Velocity vs Time')
 axes[0,0].grid(True)
-axes[0,0].set_ylim(-8000, 2000)
+axes[0,0].set_ylim(-4000, 2000)
 
 axes[1,0].plot(dataDep1[:,0],dataDep1[:,1], marker='o', linestyle='-')
 axes[1,0].set_xlabel('Time (s)')

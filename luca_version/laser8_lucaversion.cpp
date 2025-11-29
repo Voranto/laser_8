@@ -166,7 +166,7 @@ int main(){
 
     double EAINIT = ECINIT + DE;
     
-
+    double CPNMAX = 0;
 
     std::cout << "EC=" << EC << " ELC=" << ELC << " ELA=" << ELA 
           << " EA=" << EA << " EIN=" << EIN << std::endl;
@@ -424,12 +424,9 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                     int NI=NMAX+i;
                     KEQL=K[NI-1]+K[NI-2];
                     KEQR=K[NI]+K[NI-1];
-                    E[NI-1]+=W*DT*(KEQR*(T[NI]-T[NI-1])/3.0/(pow(2,(2*i)))+KEQL*(T[NI-2]-T[NI-1])/3.0/(pow(2,(2*i-1))));
-
+                    E[NI-1]+=W*DT*(KEQR*(T[NI]-T[NI-1])/3.0/(pow(2,(2*i)))+KEQL*(T[NI-2]-T[NI-1])/3.0/(pow(2,(2*i-1)))); 
                 }
-
             }
-
         }
 
         //UPDATE NODE STATES
@@ -575,7 +572,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         double  HX;
         if (E[0] >= EX1){
             DPTHM1=DEPTH;
-
             /*UPDATE BY: Luca Siegel Moreno
             * This edge case was thought for when the surface is half molten, not for supercooled, but 
             * was being triggered in supercooled state. So a change was made to include correct supercooled 
@@ -589,8 +585,12 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                     if (ISTATE[i] > 4 && ISTATE[i] < 8){
                         IFRNT=i;
                         HX=HC;
-                        if(ISTATE[i] == 4) HX=HA;
+                        if(ISTATE[i] == 4){
+                            HX=HA;
+                        } 
                         DEPTH=DX*(i+1-1.5e0)+DX*E[i]/HX;
+
+
                         break;
                     }
                     if(ISTATE[i] < 5){
@@ -601,27 +601,32 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                 }
             }
         }
-
         
-
+        
+        
+    
         VAPRE = V;
         NCOUNT=NCOUNT+1;
         double SHAPEDEPMAX;
         double TMAX;
         if(NCOUNT >= (NVS-NVW/2)){
+
             DEP2=DEP2+DEPTH;
-            if(NCOUNT == (NVS+NVW/2)){
+
+            /*
+                * UPDATE MADE BY: Luca Siegel
+                * The computation should be made for NVW windows , not NVW + 1 because the 
+                * counter starts at 0 and ends at NVW - 1, so in total NVW
+                */
+            if(NCOUNT == (NVS+NVW/2) - 1){
+
                 f_depth1 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
                 f_depth1 << DEP1 << std::endl;
 
                 f_depth2 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
                 f_depth2 << DEP2 << std::endl;
-                /*
-                * UPDATE MADE BY: Luca Siegel
-                * The computation should be made for NVW + 1 windows because the 
-                * counter starts at 0 and ends at NVW, so in total NVW + 1
-                */
-                V=((DEP2/(NVW+1))-(DEP1/(NVW+1)))/(NVS*DT);
+                
+                V=((DEP2/(NVW))-(DEP1/(NVW)))/(NVS*DT);
                 DEP1=DEP2;
                 DEP2=0.e0;
                 NCOUNT=0;
@@ -639,11 +644,9 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         TIME=TIME + DT;
         TOUTG=TOUTG+DT;
         TOUTD=TOUTD+DT;
-        if (TIME > 2.31269e-09){
-            int caca = 0;
-        }
 
-        double CPNMAX=1.00478+E[NMAX -1 ]*(-8.62645e-5-2.51611e-7*E[NMAX  - 1]);
+
+        CPNMAX=1.00478+E[NMAX -1 ]*(-8.62645e-5-2.51611e-7*E[NMAX  - 1]);
         
         if(T[NMAX - 1] > 1000) CPNMAX=1.e0;
 

@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include <iomanip>
+#include <queue>
 
 /*
 C DESCRIPTION OF INPUT VARIABLES
@@ -71,7 +72,9 @@ C     VMAX  = MELT-FRONT VELOCITY AT WHICH AMORPHOUS MATERIAL FORMS
 */
 
 int main(){
-    
+    double DEPTHPREV = 0;
+
+
     //What this variables do will be declared someplace else
     int N, NMAX, NVS, NVW, ISHAPE, ISTART;
     double DX, DTOUTG, DTOUTD;
@@ -92,7 +95,10 @@ int main(){
     /*New files to plot velocity, and depths
     */
     std::ofstream f_velocity("velocity.dat");
+    std::ofstream f_e("e_chart.dat");
     std::ofstream f_depth1("depth1.dat");
+
+
     std::ofstream f_depth2("depth2.dat");
 
     std::ofstream f_temp("temp.dat");
@@ -125,6 +131,14 @@ int main(){
     double TOUTD = 0.0;
 
     double DEPTH = 0.0, DEP1 = 0.0, DEP2 = 0.0;
+
+
+    const int WINDOW_SIZE = 5000; // Increased window size
+    std::queue<double> depth_window;
+    double sum_depth_window = 0.0;
+    double DEPTH_smoothed = 0.0;
+    const double DEPTH_ALPHA = 0.05;
+
     double V = 0.0, VPROD = 0.0, VAPRE = 0.0;
     int NCOUNT = 0, ICOUNT = 0, IFRMAX = 0;
 
@@ -141,9 +155,10 @@ int main(){
     double RATIO = 1.0 / 2.0;
 
     /*
-    *TEMPORAL ADDITION: Multiplied DT by 10 for further testing
+    *POSSIBLE IMPROVEMENT
+    *double DT = 10 * RATIO * DX * DX / DIFMAX ;
     */
-    double DT = 10 * RATIO * DX * DX / DIFMAX ;
+    double DT = RATIO * DX * DX / DIFMAX ;
 
 
 
@@ -311,10 +326,16 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
 
     f_velocity << "    TIME (SEC)"
         << std::setw(15) << "VELOCITY" << std::endl;
+    f_e << "    TIME (SEC)"
+        << std::setw(15) << "E" << std::endl;
     f_depth1 << "    TIME (SEC)"
-        << std::setw(15) << "DEPTH" << std::endl;
+        << std::setw(15) << "DEPTH2222" << std::endl;
+
+
     f_depth2 << "    TIME (SEC)"
-        << std::setw(15) << "DEPTH" << std::endl;
+        << std::setw(15) << "DEPTH222" << std::endl;
+
+
     //Begin time loop
     while (true){
         
@@ -405,6 +426,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             KEQL = (K[i-2]+K[i-1]);
             KEQR = (K[i-1] + K[i]);
             E[i-1] += W * DT *(KEQR*(T[i]-T[i-1]) +KEQL*(T[i-2]-T[i-1])) +S[i-1]*S1;
+
         }
         double DELTAE;
         if (N >= IX){
@@ -576,7 +598,10 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             * This edge case was thought for when the surface is half molten, not for supercooled, but 
             * was being triggered in supercooled state. So a change was made to include correct supercooled 
             * computation at the surface
+            * if (E[0] <= ELX1 && ISTATE[0] != 9){
             */
+
+            double DEBUG_RATIO  = 1.3661;
             if (E[0] <= ELX1 && ISTATE[0] != 9){
                 DEPTH = 0.5*DX*E[0]/HX1;
             }
@@ -585,54 +610,93 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                     if (ISTATE[i] > 4 && ISTATE[i] < 8){
                         IFRNT=i;
                         HX=HC;
+
+                        
                         if(ISTATE[i] == 4){
                             HX=HA;
                         } 
-                        DEPTH=DX*(i+1-1.5e0)+DX*E[i]/HX;
 
+                        DEPTH = DX * (i - 0.5) +  DEBUG_RATIO * DX * E[i]/ HX;
 
                         break;
                     }
-                    if(ISTATE[i] < 5){
+                    else if( ISTATE[i] == 4){
                         IFRNT=i;
-                        DEPTH=DX*(IFRNT + 1-1.5e0);
+                        HX=HC;
+                        DEPTH = DX * (i - 0.5) +  DEBUG_RATIO * DX * E[i]/ HX;
+                        break;
+                    }
+                    else if(ISTATE[i] < 5){
+                        IFRNT=i;
+                        DEPTH=DX*(IFRNT -0.5); 
+
                         break;
                     }
                 }
             }
         }
+
+
+        depth_window.push(DEPTH);
+        sum_depth_window += DEPTH;
+
+        // 2. Maintain a fixed window size
+        if (depth_window.size() > WINDOW_SIZE) {
+            // Remove the oldest depth
+            sum_depth_window -= depth_window.front();
+            depth_window.pop();
+        }
+
+        // 3. Calculate the average of the current window
+        if (depth_window.size() > 0) {
+            double window_average = sum_depth_window / depth_window.size();
+
+            // 4. Update DEPTH_smoothed
+            // Only update once the window is full for a stable average.
+            if (depth_window.size() == WINDOW_SIZE) {
+                DEPTH_smoothed = window_average;
+            } else {
+                // During startup, before the window is full, use the raw depth
+                DEPTH_smoothed = DEPTH; 
+            }
+        }
+
         
         
-        
-    
         VAPRE = V;
         NCOUNT=NCOUNT+1;
         double SHAPEDEPMAX;
         double TMAX;
+
+
+
         if(NCOUNT >= (NVS-NVW/2)){
 
-            DEP2=DEP2+DEPTH;
-
-            /*
-                * UPDATE MADE BY: Luca Siegel
-                * The computation should be made for NVW windows , not NVW + 1 because the 
-                * counter starts at 0 and ends at NVW - 1, so in total NVW
-                */
-            if(NCOUNT == (NVS+NVW/2) - 1){
-
-                f_depth1 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-                f_depth1 << DEP1 << std::endl;
-
-                f_depth2 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-                f_depth2 << DEP2 << std::endl;
+            DEP2=DEP2+DEPTH_smoothed;
+                //* UPDATE MADE BY: Luca Siegel
+                //* The computation should be made for NVW windows , not NVW + 1 because the 
+                //* counter starts at 0 and ends at NVW - 1, so in total NVW
+                //*Update would be
+                //* if(NCOUNT == (NVS+NVW/2) - 1){
+                
+            if(NCOUNT == (NVS+NVW/2)){
+                
+            
                 
                 V=((DEP2/(NVW))-(DEP1/(NVW)))/(NVS*DT);
+                f_e << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+                f_e << "IFRNT: " << IFRNT << " : ";
+                for (int i = 2; i <= NM1; i++){
+                    f_e << " " << E[i-1]; 
+                }
+                f_e << "\n";
+                
                 DEP1=DEP2;
                 DEP2=0.e0;
                 NCOUNT=0;
                 VPROD=V*VAPRE;
                 if(VPROD <0 && ICOUNT != 1){
-                    SHAPEDEPMAX=DEPTH;
+                    SHAPEDEPMAX=DEPTH_smoothed;
                     TMAX=TIME;
                     IFRMAX=IFRNT;
                     ICOUNT=1;
@@ -640,7 +704,55 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             }
         }
         
-        
+
+
+        //END EXPERIMENTAL COMPUTATION------------------
+
+
+        f_depth1 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        f_depth1 << DEPTH << '\n';
+
+
+        f_depth2 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        f_depth2 << DEPTH_smoothed << '\n';
+
+
+        f_velocity << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        f_velocity << V << '\n';
+        f_state << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        for (int i = 0; i < N; i++){
+            IPHASE = ISTATE[i];
+            switch(IPHASE){
+                case 1:
+                    NSTATE[i] = 'C';
+                    break;
+                case 2:
+                    NSTATE[i] = 'P';
+                    break;
+                case 3:
+                    NSTATE[i] = 'F';
+                    break;
+                case 4:
+                    NSTATE[i] = 'A';
+                    break;
+                case 5:
+                case 6:
+                case 7:
+                    NSTATE[i] = 'M';
+                    break;
+                case 8:
+                    NSTATE[i] = 'L';
+                    break;
+                case 9:
+                    NSTATE[i] = 'S';
+                    break;
+            }
+        }
+        for (int m1 = 0; m1 < N; ++m1) {
+            f_state << NSTATE[m1];   // single character
+            f_state << " ";           // space between characters
+        }
+        f_state << "\n";
         TIME=TIME + DT;
         TOUTG=TOUTG+DT;
         TOUTD=TOUTD+DT;
@@ -669,53 +781,20 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             SUMSX=SUMS1*DX*RH0;
         }
         
-        if(TOUTG  >=  DTOUTG){
-            TOUTG = 0.0;
-            for (int i = 0; i < N; i++){
-                IPHASE = ISTATE[i];
-                switch(IPHASE){
-                    case 1:
-                        NSTATE[i] = 'C';
-                        break;
-                    case 2:
-                        NSTATE[i] = 'P';
-                        break;
-                    case 3:
-                        NSTATE[i] = 'F';
-                        break;
-                    case 4:
-                        NSTATE[i] = 'A';
-                        break;
-                    case 5:
-                    case 6:
-                    case 7:
-                        NSTATE[i] = 'M';
-                        break;
-                    case 8:
-                        NSTATE[i] = 'L';
-                        break;
-                    case 9:
-                        NSTATE[i] = 'S';
-                        break;
-                }
-            }
-        }
-        else{
-            continue;
-        }
+
+        
+
         
         int NG = std::min(N,100);
-        f_state << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-        for (int m1 = 0; m1 < N; ++m1) {
-            f_state << NSTATE[m1];   // single character
-            f_state << " ";           // space between characters
-        }
-        f_state << "\n";
-
-        f_velocity << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-        f_velocity << V << std::endl;
-
         
+        
+        
+
+        if (TOUTG <  DTOUTG){
+            
+            continue;
+        }
+        TOUTG = 0;
         
     // --- WRITE temp_diag.dat ---
         f_temp_diag << " " << std::setw(20) << std::scientific << std::setprecision(14) << TIME << "   ";
@@ -728,6 +807,8 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             continue; 
         }
         
+
+
         bool flag = false;
         for (int i = 0; i < N; i++){
             if (ISTATE[i] > 4){

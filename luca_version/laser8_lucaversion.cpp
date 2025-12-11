@@ -684,12 +684,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             
                 
                 V=((DEP2/(NVW))-(DEP1/(NVW)))/(NVS*DT);
-                f_e << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-                f_e << "IFRNT: " << IFRNT << " : ";
-                for (int i = 2; i <= NM1; i++){
-                    f_e << " " << E[i-1]; 
-                }
-                f_e << "\n";
+                
                 
                 DEP1=DEP2;
                 DEP2=0.e0;
@@ -709,17 +704,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         //END EXPERIMENTAL COMPUTATION------------------
 
 
-        f_depth1 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-        f_depth1 << DEPTH << '\n';
-
-
-        f_depth2 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-        f_depth2 << DEPTH_smoothed << '\n';
-
-
-        f_velocity << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-        f_velocity << V << '\n';
-        f_state << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        
         for (int i = 0; i < N; i++){
             IPHASE = ISTATE[i];
             switch(IPHASE){
@@ -748,11 +733,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                     break;
             }
         }
-        for (int m1 = 0; m1 < N; ++m1) {
-            f_state << NSTATE[m1];   // single character
-            f_state << " ";           // space between characters
-        }
-        f_state << "\n";
+        
         TIME=TIME + DT;
         TOUTG=TOUTG+DT;
         TOUTD=TOUTD+DT;
@@ -795,7 +776,32 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             continue;
         }
         TOUTG = 0;
+        f_e << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+                f_e << "IFRNT: " << IFRNT << " : ";
+                for (int i = 2; i <= NM1; i++){
+                    f_e << " " << E[i-1]; 
+                }
+                f_e << "\n";
+
         
+        for (int m1 = 0; m1 < N; ++m1) {
+            f_state << NSTATE[m1];   // single character
+            f_state << " ";           // space between characters
+        }
+        f_state << "\n";
+        f_depth1 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        f_depth1 << DEPTH << '\n';
+
+
+        f_depth2 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        f_depth2 << DEPTH_smoothed << '\n';
+
+
+        f_velocity << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        f_velocity << V << '\n';
+        f_state << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+
+
     // --- WRITE temp_diag.dat ---
         f_temp_diag << " " << std::setw(20) << std::scientific << std::setprecision(14) << TIME << "   ";
         for (int m4 = 0; m4 < N; ++m4) {

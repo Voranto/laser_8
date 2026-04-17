@@ -72,7 +72,6 @@ C     VMAX  = MELT-FRONT VELOCITY AT WHICH AMORPHOUS MATERIAL FORMS
 */
 
 int main(){
-    double DEPTHPREV = 0;
 
 
     //What this variables do will be declared someplace else
@@ -451,12 +450,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             }
         }
 
-        //UPDATE NODE STATES
-            /*
-            1=CRYSTAL   2=LARGE POLY 3=FINE POLY
-            4=AMORPHOUS 5=MUSHY4     6=MUSHY1
-            7=MUSHY3    8=LIQUID     9=SUPERCOOLED
-            */
+        
         
         for (int i = 0; i < NM1; ++i) {  // Fortran I=1,NM1
             int IM1;
@@ -485,7 +479,12 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                     if (E[i] < EA) ISTATE[i] = 4;
                     if (E[i] >= ELA) ISTATE[i] = 9;
                     break;
-
+                //UPDATE NODE STATES
+            /*
+            1=CRYSTAL   2=LARGE POLY 3=FINE POLY
+            4=AMORPHOUS 5=MUSHY4     6=MUSHY1
+            7=MUSHY3    8=LIQUID     9=SUPERCOOLED
+            */
                 case 6:
                     if (E[i] > ELC) {
                         ISTATE[i] = 8;
@@ -495,6 +494,16 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                         else
                             ISTATE[i] = 2;
                     } else {
+                        //EXPERIMENTAL TESTING------
+                        //V = -4000 VMAX = 10000
+                        // 4000 >= -10000
+                        //QUEREMOS AMORFO CUANDO VMAX ES BAJITO ZB 1500
+
+                        // X >= -1500
+                        //V = -2000 queremos amorfo
+                        //V = -1000 no queremos amorfo
+                        // if (V < VMAX){queremos amorfo}
+                        // else{ queremos recristalizacion}
                         if (V >= -VMAX) {break; } 
                         if (E[i] > EA) ISTATE[i] = 5;
                         if (E[i] > ELA) ISTATE[i] = 9;
@@ -600,8 +609,9 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             * computation at the surface
             * if (E[0] <= ELX1 && ISTATE[0] != 9){
             */
-
-            double DEBUG_RATIO  = 1.3661;
+            double DEBUG_RATIO  = 1;
+            
+            //double DEBUG_RATIO  = 1.3661;
             if (E[0] <= ELX1 && ISTATE[0] != 9){
                 DEPTH = 0.5*DX*E[0]/HX1;
             }
@@ -698,7 +708,8 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                 }
             }
         }
-        
+        f_depth1 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        f_depth1 << DEPTH << '\n';
 
 
         //END EXPERIMENTAL COMPUTATION------------------
@@ -789,8 +800,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             f_state << " ";           // space between characters
         }
         f_state << "\n";
-        f_depth1 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-        f_depth1 << DEPTH << '\n';
+        
 
 
         f_depth2 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";

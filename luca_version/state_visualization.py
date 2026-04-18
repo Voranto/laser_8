@@ -77,7 +77,7 @@ depth = np.array(depth_list, dtype=float)
 plt.imshow(indexed, cmap=cmap, norm=norm, aspect='auto', origin='upper', extent=[
         times[0], times[-1],   # x-axis (time)
         depth[-1], depth[0]     # y-axis (depth)
-    ])
+])
 plt.xlabel("Time(seconds)")
 plt.ylabel("Depth(cm)")
 plt.title("State evolution")

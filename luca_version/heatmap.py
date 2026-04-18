@@ -5,6 +5,19 @@ from matplotlib.colors import LinearSegmentedColormap
 time_steps = []
 temp_rows = []
 time_list = []
+depth_list = []
+#Access DX from state.dat
+with open("state.dat") as f:
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
+
+        parts = line.split()
+        #GET DX
+        if (parts[0] == "TIME"):
+            DX = float(parts[3][1:])
+depth_list.append(0)
 
 with open("temp_diag.dat") as f:
     for line in f:
@@ -25,6 +38,7 @@ with open("temp_diag.dat") as f:
 
             time_list.append(t)
             temp_rows.append(temps)
+            depth_list.append(depth_list[-1] + DX)
 
         except:
             continue
@@ -47,19 +61,25 @@ cmap = LinearSegmentedColormap.from_list(
 
 plt.figure(figsize=(10, 6))
 
+times = np.array(time_list, dtype=float)
+depth = np.array(depth_list, dtype=float)
 im = plt.imshow(
     data,
     aspect='auto',
     origin='upper',
-    cmap=cmap
+    cmap=cmap,
+    extent=[
+        times[0], times[-1],   # x-axis (time)
+        depth[-1], depth[0]     # y-axis (depth)
+]
 )
 
-plt.xlabel("Time index")
-plt.ylabel("Depth index")
+plt.xlabel("Time (seconds)")
+plt.ylabel("Depth (cm)")
 plt.title("Temperature Evolution Heatmap")
 
 # colorbar with meaning
-cbar = plt.colorbar(im)
+cbar = plt.colorbar(im,pad=0.1)
 cbar.set_label("Temperature")
 
 # legend showing extremes

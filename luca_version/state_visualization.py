@@ -26,6 +26,8 @@ letter_to_state = {
 
 # --- parse data (your code unchanged) ---
 time_steps = []
+time_list = []
+depth_list = []
 
 with open("state.dat") as f:
     for line in f:
@@ -34,20 +36,28 @@ with open("state.dat") as f:
             continue
 
         parts = line.split()
+        #GET DX
+        if (parts[0] == "TIME"):
+            print(parts)
+            DX = float(parts[3][1:])
+            print(DX)
 
         if all(len(p) == 1 and p.isalpha() for p in parts):
+            depth_list.append(DX)
             time_steps.append(parts)
 
         elif len(parts) > 1 and parts[1].isalpha():
             time_steps.append(parts[1:])
+            time_list.append(float(parts[0]))
+            depth_list.append(depth_list[-1] + DX)
 
 data = np.array(time_steps)
 
 numeric = np.vectorize(letter_to_state.get)(data).astype(float)
 numeric = numeric.T
 
-# --- FIX: correct mapping ---
-values = sorted(state_info.keys())  # [1,2,3,4,5,8,9]
+
+values = sorted(state_info.keys()) 
 
 # map states into contiguous indices 0..6
 value_to_index = {v: i for i, v in enumerate(values)}
@@ -61,10 +71,15 @@ cmap = ListedColormap(colors)
 norm = BoundaryNorm(np.arange(-0.5, len(values) + 0.5, 1), cmap.N)
 
 # --- plot ---
-plt.imshow(indexed, cmap=cmap, norm=norm, aspect='auto', origin='upper')
+times = np.array(time_list, dtype=float)
+depth = np.array(depth_list, dtype=float)
 
-plt.xlabel("Time")
-plt.ylabel("Depth")
+plt.imshow(indexed, cmap=cmap, norm=norm, aspect='auto', origin='upper', extent=[
+        times[0], times[-1],   # x-axis (time)
+        depth[-1], depth[0]     # y-axis (depth)
+    ])
+plt.xlabel("Time(seconds)")
+plt.ylabel("Depth(cm)")
 plt.title("State evolution")
 
 import matplotlib.patches as mpatches

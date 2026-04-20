@@ -83,6 +83,7 @@ int main(){
     double HC, TC, CL, VMAX;
 
     const int MATRIX_SIZE = 250;
+    int pulse_counter = 0;
 
     std::vector<char> NSTATE(MATRIX_SIZE);
     std::vector<double> K(MATRIX_SIZE), E(MATRIX_SIZE), T(MATRIX_SIZE), S(MATRIX_SIZE);
@@ -401,20 +402,25 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
 
         SUMS1+=S1;
 
-        // Leading space
-        f_pulse << " ";
+        if (pulse_counter == 20){
+            // Leading space
+            f_pulse << " ";
 
-        // TIME as D20.14
-        f_pulse << std::setw(20) << std::scientific << std::setprecision(14) << TIME;
+            // TIME as D20.14
+            f_pulse << std::setw(20) << std::scientific << std::setprecision(14) << TIME;
 
-        // 3 spaces
-        f_pulse << "   ";
+            // 3 spaces
+            f_pulse << "   ";
 
-        // Print S1 500 times like Fortran
-        f_pulse << std::setw(7) << std::scientific << std::setprecision(2) << S1 << " ";
+            // Print S1 500 times like Fortran
+            f_pulse << std::setw(7) << std::scientific << std::setprecision(2) << S1 << " ";
+            
+
+            f_pulse << "\n";
+            pulse_counter = 0;
+        }
+        pulse_counter++;
         
-
-        f_pulse << "\n";
 
 
         //UPDATE ENERGY (E) BY ROSES SCHEME
@@ -755,6 +761,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         if(T[NMAX - 1] > 1000) CPNMAX=1.e0;
 
         DT=RATDX2*CPNMAX/K[N-1];
+        std::cout << "DT is: " <<  DT << std::endl;
         double SUME;
         double SUMSX;
         int NXM1;

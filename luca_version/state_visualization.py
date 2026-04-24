@@ -35,7 +35,6 @@ letter_to_state = {
 # ---- PARSING ----
 time_steps = []
 time_list = []
-depth_list = []
 
 with open("state.dat") as f:
     for line in f:
@@ -49,13 +48,15 @@ with open("state.dat") as f:
             DX = float(parts[3][1:])
 
         elif all(len(p) == 1 and p.isalpha() for p in parts):
-            depth_list.append(DX)
             time_steps.append(parts)
 
         elif len(parts) > 1 and parts[1].isalpha():
             time_steps.append(parts[1:])
-            time_list.append(float(parts[0]))
-            depth_list.append(depth_list[-1] + DX)
+            time_list.append(float(parts[0])*1e9)
+
+n_depth = len(time_steps[0])  # number of spatial points
+
+depth_list = np.arange(n_depth) * DX * 1e7  # nm
 
 # ---- PROCESS DATA ----
 data = np.array(time_steps)
@@ -87,8 +88,8 @@ im = ax.imshow(
 )
 
 # ---- LABELS ----
-ax.set_xlabel("Time (seconds)")
-ax.set_ylabel("Depth (cm)")
+ax.set_xlabel("Time (ns)")
+ax.set_ylabel("Depth (nm)")
 ax.set_title("State Evolution")
 
 # ---- LEGEND (FIXED + NEVER CUT OFF) ----

@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
+
 
 # ---- GLOBAL STYLE (publication-like) ----
+LUT_FILENAME = "fire.lut"
 plt.rcParams.update({
     "font.size": 16,
     "axes.titlesize": 22,
@@ -10,6 +12,24 @@ plt.rcParams.update({
     "xtick.labelsize": 22,
     "ytick.labelsize": 22
 })
+
+
+
+
+def load_imagej_lut(path):
+    with open(path, "rb") as f:
+        data = np.frombuffer(f.read(), dtype=np.uint8)
+
+    # ImageJ LUTs are usually 768 bytes (256 RGB entries)
+    if len(data) < 768:
+        raise ValueError("Not a valid ImageJ LUT (too small)")
+
+    data = data[:768].reshape((3, 256)).T  # (256, 3)
+
+    return data / 255.0  # normalize to 0–1
+
+lut_rgb = load_imagej_lut(LUT_FILENAME)
+LUT_CMAP = ListedColormap(lut_rgb)
 
 # ---- YOUR DATA LOADING (unchanged) ----
 time_steps = []
@@ -76,7 +96,7 @@ im = ax.imshow(
     data,
     aspect='auto',
     origin='upper',
-    cmap=cmap,
+    cmap=LUT_CMAP,
     extent=[times[0], times[-1], depth[-1], depth[0]]
 )
 

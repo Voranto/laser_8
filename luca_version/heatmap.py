@@ -4,6 +4,12 @@ from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 
 # ---- GLOBAL STYLE (publication-like) ----
+MANUAL_LUT_TEMP_MIN = False
+MANUAL_LUT_TEMP_MAX = False
+
+LUT_MIN = 0
+LUT_MAX = 0
+
 LUT_FILENAME = "fire.lut"
 plt.rcParams.update({
     "font.size": 16,
@@ -97,7 +103,10 @@ im = ax.imshow(
     aspect='auto',
     origin='upper',
     cmap=LUT_CMAP,
-    extent=[times[0], times[-1], depth[-1], depth[0]]
+    extent=[times[0], times[-1], depth[-1], depth[0]],
+    vmin=LUT_MIN if MANUAL_LUT_TEMP_MIN else np.min(data),
+    vmax=LUT_MAX if MANUAL_LUT_TEMP_MAX else np.max(data)
+
 )
 
 # ---- LABELS ----

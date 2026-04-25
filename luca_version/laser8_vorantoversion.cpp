@@ -761,7 +761,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         if(T[NMAX - 1] > 1000) CPNMAX=1.e0;
 
         DT=RATDX2*CPNMAX/K[N-1];
-        std::cout << "DT is: " <<  DT << std::endl;
         double SUME;
         double SUMSX;
         int NXM1;

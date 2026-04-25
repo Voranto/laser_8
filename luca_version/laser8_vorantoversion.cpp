@@ -81,11 +81,13 @@ void generate_depth_vector(double DX, int NMAX) {
     // Accurate grid component
     for (int i = 0; i < NMAX; i++) {
         f << depth << "\n";
-        depth += DX;
+        
+        // Change cm to nm
+        depth += DX*1e7;
     }
 
     // Blurry grid segment (see paper page 78)
-    double dx_coarse = DX;
+    double dx_coarse = DX*1e7;
 
     for (int i = 0; i < 12; i++) {
         dx_coarse *= 2;  // 2DX, 4DX, ...

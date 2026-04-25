@@ -22,6 +22,14 @@ state_info = {
     9: ("SUPERCOOLED", "cyan"),
 }
 
+#------------------------------PRINTING INFORMATION---------------------------
+print("The following colors have been assigned: ")
+for name,color in state_info.values():
+    print(name, "has been assigned", color)
+
+print("The xtick label size is: ", plt.rcParams.get("xtick.labelsize"))
+print("The ytick label size is: ", plt.rcParams.get("ytick.labelsize"))
+
 letter_to_state = {
     'C': 1,
     'P': 2,

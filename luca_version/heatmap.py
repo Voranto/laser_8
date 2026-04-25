@@ -19,7 +19,20 @@ plt.rcParams.update({
     "ytick.labelsize": 22
 })
 
+#------------------------------PRINTING INFORMATION---------------------------
+print("The imported LUT file that's being used is: ", LUT_FILENAME)
+if MANUAL_LUT_TEMP_MIN:
+    print("The minimum temperature for the LUT has been manually set, and it's value is: ", LUT_MIN)
+else:
+    print("The minimum temperature for the LUT will be the minimum value found in the data")
 
+if MANUAL_LUT_TEMP_MAX:
+    print("The maximum temperature for the LUT has been manually set, and it's value is: ", LUT_MAX)
+else:
+    print("The maximum temperature for the LUT will be the maximum value found in the data")
+
+print("The xtick label size is: ", plt.rcParams.get("xtick.labelsize"))
+print("The ytick label size is: ", plt.rcParams.get("ytick.labelsize"))
 
 
 def load_imagej_lut(path):

@@ -71,6 +71,28 @@ C
 C     VMAX  = MELT-FRONT VELOCITY AT WHICH AMORPHOUS MATERIAL FORMS
 */
 
+// NOTE: This code assumes that cell number 0 has depth of 0, so the last
+// accurate cell will have depth (NMAX-1)*DX, instead of NMAX*DX. 
+void generate_depth_vector(double DX, int NMAX) {
+    std::ofstream f("depth_vector.dat");
+
+    double depth = 0.0;
+
+    // Accurate grid component
+    for (int i = 0; i < NMAX; i++) {
+        f << depth << "\n";
+        depth += DX;
+    }
+
+    // Blurry grid segment (see paper page 78)
+    double dx_coarse = DX;
+
+    for (int i = 0; i < 12; i++) {
+        dx_coarse *= 2;  // 2DX, 4DX, ...
+        depth += dx_coarse;
+        f << depth << "\n";
+    }
+}
 int main(){
 
 
@@ -123,7 +145,8 @@ int main(){
     std::cin >> HC >> TC >> CL >> VMAX;
     std::cout << HC <<" " << TC <<" " << CL <<" " << VMAX << std::endl;
 
-    
+    // GENERATE DEPTH VECTOR
+    generate_depth_vector(DX, NMAX);
 
     //MISC VALUES
     double TIME = 0.0;

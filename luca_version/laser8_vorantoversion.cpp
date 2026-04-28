@@ -89,10 +89,11 @@ void generate_depth_vector(double DX, int NMAX) {
     // Blurry grid segment (see paper page 78)
     double dx_coarse = DX*1e7;
 
-    for (int i = 0; i < 12; i++) {
-        dx_coarse *= 2;  // 2DX, 4DX, ...
+    for (int i = 0; i <= 12; i++) {
         depth += dx_coarse;
         f << depth << "\n";
+        dx_coarse *= 2;  // 2DX, 4DX, ...
+        
     }
 }
 int main(){

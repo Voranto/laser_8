@@ -62,9 +62,14 @@ with open("state.dat") as f:
             time_steps.append(parts[1:])
             time_list.append(float(parts[0])*1e9)
 
-n_depth = len(time_steps[0])  # number of spatial points
 
-depth_list = np.arange(n_depth) * DX * 1e7  # nm
+depth_list = []  # nm
+with open("depth_vector.dat") as f:
+    for line in f:
+        if not line:
+            continue
+        depth_list.append(float(line.strip()))
+n_depth = len(depth_list)
 
 # ---- PROCESS DATA ----
 data = np.array(time_steps)
@@ -80,40 +85,93 @@ cmap = ListedColormap(colors)
 
 norm = BoundaryNorm(np.arange(-0.5, len(values) + 0.5, 1), cmap.N)
 
+
 times = np.array(time_list, dtype=float)
 depth = np.array(depth_list, dtype=float)
 
 # ---- FIGURE (KEY FIX FOR CUT-OFF ISSUES) ----
-fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+# ---- SPLIT DATA ----
+N_EXP = 12
+N_REG = n_depth - N_EXP  # regular linear nodes
 
-im = ax.imshow(
-    indexed,
-    cmap=cmap,
-    norm=norm,
-    aspect='auto',
-    origin='upper',
-    extent=[times[0], times[-1], depth[-1], depth[0]]
+depth_reg = depth[:N_REG]
+depth_exp = depth[N_REG:]
+
+data_reg = indexed[:N_REG, : -2]   # shape (N_REG, n_time)
+data_exp = indexed[N_REG+1:, :-2]   # shape (N_EXP, n_time)
+print(depth_exp)
+# ---- CELL EDGE HELPERS ----
+def cell_edges_linear(centers):
+    """Arithmetic midpoints → linear-scale cell edges."""
+    c = np.asarray(centers, dtype=float)
+    mids = 0.5 * (c[:-1] + c[1:])
+    left  = c[0]  - (c[1]  - c[0])  / 2
+    right = c[-1] + (c[-1] - c[-2]) / 2
+    return np.concatenate([[left], mids, [right]])
+
+def cell_edges_log(centers):
+    """Geometric midpoints → log-scale cell edges (visually even on log axis)."""
+    c = np.asarray(centers, dtype=float)
+    mids  = np.sqrt(c[:-1] * c[1:])          # geometric mean between neighbours
+    left  = c[0]  ** 2 / c[1]                # extrapolate left  in log space
+    right = c[-1] ** 2 / c[-2]               # extrapolate right in log space
+    return np.concatenate([[left], mids, [right]])
+
+depth_reg_edges = cell_edges_linear(depth_reg)
+depth_exp_edges = cell_edges_log(depth_exp)
+
+# ---- FIGURE ----
+fig, (ax1, ax2) = plt.subplots(
+    1, 2,
+    figsize=(15, 7),
+    gridspec_kw={"width_ratios": [3, 1]},   # exp region gets less horizontal space
+    constrained_layout=True,
 )
 
-# ---- LABELS ----
-ax.set_xlabel("Time (ns)")
-ax.set_ylabel("Depth (nm)")
-ax.set_title("State Evolution")
+# -- Left: regular region, linear depth axis --
+im1 = ax1.pcolormesh(times, depth_reg_edges, data_reg, cmap=cmap, norm=norm)
+ax1.invert_yaxis()                           # surface (0 nm) at top
+ax1.set_xlabel("Time (ns)")
+ax1.set_ylabel("Depth (nm)")
+ax1.set_title("State Evolution")
 
-# ---- LEGEND (FIXED + NEVER CUT OFF) ----
+# Mark the boundary with a dashed line at the bottom
+ax1.axhline(depth_reg[-1], color="black", lw=1.2, ls="--", alpha=0.6)
+
+# -- Right: extrapolated exponential region, log depth axis --
+print(times.shape,depth_exp_edges.shape,data_exp.shape)
+
+im2 = ax2.pcolormesh(times, depth_exp_edges, data_exp, cmap=cmap, norm=norm)
+ax2.set_yscale("log")
+ax2.invert_yaxis()
+ax2.set_xlabel("Time (ns)")
+ax2.set_title("Extrapolated\n(blurry nodes)")
+
+# Tick labels on the right side so they don't overlap ax1
+ax2.yaxis.set_label_position("right")
+ax2.yaxis.tick_right()
+ax2.set_ylabel("Depth (nm)", labelpad=10)
+
+# Shade the entire right panel to signal lower physical fidelity
+ax2.set_facecolor("#f0f0f0")
+ax2.text(
+    0.5, 0.97, "×2ⁿ spacing",
+    transform=ax2.transAxes,
+    ha="center", va="top",
+    fontsize=11, color="gray", style="italic",
+)
+
+# ---- LEGEND (attached to ax1) ----
 patches = [
     mpatches.Patch(color=state_info[v][1], label=state_info[v][0])
     for v in values
 ]
-
-legend = ax.legend(
+ax1.legend(
     handles=patches,
-    loc='center left',
-    bbox_to_anchor=(1.02, 0.5),
-    frameon=True
+    loc="upper left",
+    bbox_to_anchor=(1.01, 1.0),
+    frameon=True,
+    fontsize=13,
 )
-
-# ---- EXTRA SAFETY: prevent clipping on tight layouts ----
-plt.subplots_adjust(right=0.80)
 
 plt.show()

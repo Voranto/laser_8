@@ -42,7 +42,7 @@ letter_to_state = {
 
 # ---- PARSING ----
 time_steps = []
-time_list = []
+time_list = [0]
 
 with open("state.dat") as f:
     for line in f:
@@ -61,7 +61,7 @@ with open("state.dat") as f:
         elif len(parts) > 1 and parts[1].isalpha():
             time_steps.append(parts[1:])
             time_list.append(float(parts[0])*1e9)
-
+time_steps.insert(0,time_steps[0])
 
 depth_list = []  # nm
 with open("depth_vector.dat") as f:

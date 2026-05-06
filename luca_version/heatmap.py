@@ -51,9 +51,8 @@ lut_rgb = load_imagej_lut(LUT_FILENAME)
 LUT_CMAP = ListedColormap(lut_rgb)
 
 # ---- YOUR DATA LOADING (unchanged) ----
-time_steps = []
 temp_rows = []
-time_list = []
+time_list = [0]
 
 with open("state.dat") as f:
     for line in f:
@@ -92,9 +91,6 @@ n_depth = len(temp_rows[0])  # number of spatial points
 depth_list = np.arange(n_depth) * DX * 1e7  # nm
 
 data = np.array(temp_rows).T
-
-t_min = np.min(data)
-t_max = np.max(data)
 
 cmap = LinearSegmentedColormap.from_list("blue_red", ["blue", "red"])
 

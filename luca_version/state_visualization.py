@@ -96,10 +96,8 @@ N_REG = n_depth - N_EXP  # regular linear nodes
 
 depth_reg = depth[:N_REG]
 depth_exp = depth[N_REG:]
-print(depth_exp)
 data_reg = indexed[:N_REG, : -2]   # shape (N_REG, n_time)
 data_exp = indexed[N_REG:, :-2]   # shape (N_EXP, n_time)
-print(depth_exp)
 # ---- CELL EDGE HELPERS ----
 def cell_edges_linear(centers):
     """Arithmetic midpoints → linear-scale cell edges."""

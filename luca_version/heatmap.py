@@ -135,15 +135,5 @@ cbar = fig.colorbar(
 )
 cbar.set_label("Temperature")
 
-# ---- ANNOTATION (FIGURE-LOCKED, NO DRIFT) ----
-fig.text(
-    0.82, 0.88,
-    f"Hot (red): {t_max:.2f}\nCold (blue): {t_min:.2f}",
-    ha='left',
-    va='top',
-    fontsize=12,
-    bbox=dict(facecolor='white', alpha=0.8, edgecolor='none')
-)
-
 # ---- SHOW ----
 plt.show()

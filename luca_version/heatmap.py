@@ -3,6 +3,13 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 # ---- GLOBAL STYLE ----
+
+# Set to -1 if you want to use the usual range (from minimum value found to maximum value found)
+DEPTH_MIN = -1
+DEPTH_MAX = -1
+TIME_MIN = -1
+TIME_MAX = -1
+
 MANUAL_LUT_TEMP_MIN = True
 MANUAL_LUT_TEMP_MAX = True
 LUT_MIN = 1200
@@ -87,6 +94,13 @@ data = np.array(temp_rows).T          # shape: (n_depth, n_time)
 times = np.array(time_list, dtype=float)
 depth = np.array(depth_list, dtype=float)
 
+# ---- APPLY CUSTOM RANGES ----
+time_min_plot = TIME_MIN if TIME_MIN != -1 else times.min()
+time_max_plot = TIME_MAX if TIME_MAX != -1 else times.max()
+depth_min_plot = DEPTH_MIN if DEPTH_MIN != -1 else depth.min()
+depth_max_plot = DEPTH_MAX if DEPTH_MAX != -1 else depth.max()
+
+
 vmin = LUT_MIN if MANUAL_LUT_TEMP_MIN else np.min(data)
 vmax = LUT_MAX if MANUAL_LUT_TEMP_MAX else np.max(data)
 
@@ -165,6 +179,13 @@ ax2.text(
     ha="center", va="top",
     fontsize=11, color="gray", style="italic",
 )
+
+ax1.set_xlim(time_min_plot, time_max_plot)
+ax1.set_ylim(depth_max_plot, depth_min_plot)  # inverted
+
+ax2.set_xlim(time_min_plot, time_max_plot)
+ax2.set_ylim(depth_max_plot, depth_min_plot)  # inverted
+
 
 # ---- SHARED COLORBAR (anchored to both axes) ----
 cbar = fig.colorbar(im1, ax=[ax1, ax2], shrink=0.85, pad=0.12)

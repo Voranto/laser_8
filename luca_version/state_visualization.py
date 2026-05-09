@@ -4,6 +4,12 @@ import matplotlib.patches as mpatches
 from matplotlib.colors import ListedColormap, BoundaryNorm
 
 # ---- STYLE ----
+# Set to -1 if you want to use the usual range (from minimum value found to maximum value found)
+DEPTH_MIN = -1
+DEPTH_MAX = -1
+TIME_MIN = -1
+TIME_MAX = -1
+
 plt.rcParams.update({
     "font.size": 16,
     "axes.titlesize": 22,
@@ -89,6 +95,11 @@ norm = BoundaryNorm(np.arange(-0.5, len(values) + 0.5, 1), cmap.N)
 times = np.array(time_list, dtype=float)
 depth = np.array(depth_list, dtype=float)
 
+time_min_plot = TIME_MIN if TIME_MIN != -1 else times.min()
+time_max_plot = TIME_MAX if TIME_MAX != -1 else times.max()
+depth_min_plot = DEPTH_MIN if DEPTH_MIN != -1 else depth.min()
+depth_max_plot = DEPTH_MAX if DEPTH_MAX != -1 else depth.max()
+
 # ---- FIGURE (KEY FIX FOR CUT-OFF ISSUES) ----
 # ---- SPLIT DATA ----
 N_EXP = 12
@@ -171,5 +182,11 @@ ax1.legend(
     frameon=True,
     fontsize=13,
 )
+
+ax1.set_xlim(time_min_plot, time_max_plot)
+ax1.set_ylim(depth_max_plot, depth_min_plot)  # inverted
+
+ax2.set_xlim(time_min_plot, time_max_plot)
+ax2.set_ylim(depth_max_plot, depth_min_plot)  # inverted
 
 plt.show()

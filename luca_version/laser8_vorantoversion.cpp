@@ -546,17 +546,17 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                         ISTATE[i] = 8;
                     } else if (E[i] < ELA) {
                         ISTATE[i] = 5;
-                    } else if (E[i] < EIN) {
-                        TIMER2[i] += DT;
-                    } else {
-                        TIMER2[i] = 0.0;
+                    } else{
+                        if (E[i] < EIN) 
+                            TIMER2[i] += DT;
+                        else
+                            TIMER2[i] = 0.0;
                         if (ISTATE[i + 1] == 1) {
                             ISTATE[i] = 6; 
                             break;
                         } else if (ISTATE[i + 1] < 4 || ISTATE[IM1] < 4) {
                             TIMER1[i] += DT;
                         } else {
-                            
                             TIMER1[i] = 0.0;
                         }
 

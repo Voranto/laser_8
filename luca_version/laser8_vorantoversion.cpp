@@ -180,10 +180,6 @@ int main(){
     double DIFMAX = 1.0;      // largest diffusivity
     double RATIO = 1.0 / 2.0;
 
-    /*
-    *POSSIBLE IMPROVEMENT
-    *double DT = 10 * RATIO * DX * DX / DIFMAX ;
-    */
     double DT = RATIO * DX * DX / DIFMAX ;
 
 
@@ -483,7 +479,12 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         }
 
         
-        
+        //UPDATE NODE STATES
+            /*
+            1=CRYSTAL   2=LARGE POLY 3=FINE POLY
+            4=AMORPHOUS 5=MUSHY4     6=MUSHY1
+            7=MUSHY3    8=LIQUID     9=SUPERCOOLED
+            */
         for (int i = 0; i < NM1; ++i) {  // Fortran I=1,NM1
             int IM1;
             if (i == 0) {
@@ -511,12 +512,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                     if (E[i] < EA) ISTATE[i] = 4;
                     if (E[i] >= ELA) ISTATE[i] = 9;
                     break;
-                //UPDATE NODE STATES
-            /*
-            1=CRYSTAL   2=LARGE POLY 3=FINE POLY
-            4=AMORPHOUS 5=MUSHY4     6=MUSHY1
-            7=MUSHY3    8=LIQUID     9=SUPERCOOLED
-            */
                 case 6:
                     if (E[i] > ELC) {
                         ISTATE[i] = 8;
@@ -526,16 +521,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                         else
                             ISTATE[i] = 2;
                     } else {
-                        //EXPERIMENTAL TESTING------
-                        //V = -4000 VMAX = 10000
-                        // 4000 >= -10000
-                        //QUEREMOS AMORFO CUANDO VMAX ES BAJITO ZB 1500
-
-                        // X >= -1500
-                        //V = -2000 queremos amorfo
-                        //V = -1000 no queremos amorfo
-                        // if (V < VMAX){queremos amorfo}
-                        // else{ queremos recristalizacion}
                         if (V >= -VMAX) {break; } 
                         if (E[i] > EA) ISTATE[i] = 5;
                         if (E[i] > ELA) ISTATE[i] = 9;
@@ -579,8 +564,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                         if (ISTATE[i] == 6 && ISTATE[i-1] == 3) ISTATE[i] = 7;
                         if (TIMER2[i] > TP) ISTATE[i] = 7;
                     }
-
-                    
                     break;
             }
         }

@@ -665,42 +665,13 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         f_depth << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
         f_depth << DEPTH << '\n';
 
-
-        //END EXPERIMENTAL COMPUTATION------------------        
-        for (int i = 0; i < N; i++){
-            IPHASE = ISTATE[i];
-            switch(IPHASE){
-                case 1:
-                    NSTATE[i] = 'C';
-                    break;
-                case 2:
-                    NSTATE[i] = 'P';
-                    break;
-                case 3:
-                    NSTATE[i] = 'F';
-                    break;
-                case 4:
-                    NSTATE[i] = 'A';
-                    break;
-                case 5:
-                case 6:
-                case 7:
-                    NSTATE[i] = 'M';
-                    break;
-                case 8:
-                    NSTATE[i] = 'L';
-                    break;
-                case 9:
-                    NSTATE[i] = 'S';
-                    break;
-            }
-        }
-        
+        // Take next time step
         TIME=TIME + DT;
         TOUTG=TOUTG+DT;
         TOUTD=TOUTD+DT;
 
 
+        //END EXPERIMENTAL COMPUTATION------------------        
         CPNMAX=1.00478+E[NMAX -1 ]*(-8.62645e-5-2.51611e-7*E[NMAX  - 1]);
         
         if(T[NMAX - 1] > 1000) CPNMAX=1.e0;
@@ -722,6 +693,35 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             }
             SUME=(SUME-ET0)*DX*RH0;
             SUMSX=SUMS1*DX*RH0;
+        } else {
+            for (int i = 0; i < N; i++){
+                IPHASE = ISTATE[i];
+                switch(IPHASE){
+                    case 1:
+                        NSTATE[i] = 'C';
+                        break;
+                    case 2:
+                        NSTATE[i] = 'P';
+                        break;
+                    case 3:
+                        NSTATE[i] = 'F';
+                        break;
+                    case 4:
+                        NSTATE[i] = 'A';
+                        break;
+                    case 5:
+                    case 6:
+                    case 7:
+                        NSTATE[i] = 'M';
+                        break;
+                    case 8:
+                        NSTATE[i] = 'L';
+                        break;
+                    case 9:
+                        NSTATE[i] = 'S';
+                        break;
+                }
+            }
         }
         
 

@@ -121,10 +121,7 @@ int main(){
     */
     std::ofstream f_velocity("velocity.dat");
     std::ofstream f_e("e_chart.dat");
-    std::ofstream f_depth1("depth1.dat");
-
-
-    std::ofstream f_depth2("depth2.dat");
+    std::ofstream f_depth("depth.dat");
 
     std::ofstream f_temp("temp.dat");
     std::ofstream f_temp_diag("temp_diag.dat");
@@ -157,13 +154,6 @@ int main(){
     double TOUTD = 0.0;
 
     double DEPTH = 0.0, DEP1 = 0.0, DEP2 = 0.0;
-
-
-    const int WINDOW_SIZE = 5000; // Increased window size
-    std::queue<double> depth_window;
-    double sum_depth_window = 0.0;
-    double DEPTH_smoothed = 0.0;
-    const double DEPTH_ALPHA = 0.05;
 
     double V = 0.0, VPROD = 0.0, VAPRE = 0.0;
     int NCOUNT = 0, ICOUNT = 0, IFRMAX = 0;
@@ -350,12 +340,8 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         << std::setw(15) << "VELOCITY" << std::endl;
     f_e << "    TIME (SEC)"
         << std::setw(15) << "E" << std::endl;
-    f_depth1 << "    TIME (SEC)"
+    f_depth << "    TIME (SEC)"
         << std::setw(15) << "DEPTH2222" << std::endl;
-
-
-    f_depth2 << "    TIME (SEC)"
-        << std::setw(15) << "DEPTH222" << std::endl;
 
 
     //Begin time loop
@@ -658,39 +644,29 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         NCOUNT=NCOUNT+1;
         double SHAPEDEPMAX;
         double TMAX;
-
-
-
         if(NCOUNT > (NVS-NVW/2)){
 
             DEP2=DEP2+DEPTH;
             if(NCOUNT == (NVS+NVW/2)){
-                
-            
-                
                 V=((DEP2/(NVW))-(DEP1/(NVW)))/(NVS*DT);
-                
                 
                 DEP1=DEP2;
                 DEP2=0.e0;
                 NCOUNT=0;
                 VPROD=V*VAPRE;
                 if(VPROD <0 && ICOUNT != 1){
-                    SHAPEDEPMAX=DEPTH_smoothed;
+                    SHAPEDEPMAX=DEPTH;
                     TMAX=TIME;
                     IFRMAX=IFRNT;
                     ICOUNT=1;
                 }
             }
         }
-        f_depth1 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-        f_depth1 << DEPTH << '\n';
+        f_depth << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        f_depth << DEPTH << '\n';
 
 
-        //END EXPERIMENTAL COMPUTATION------------------
-
-
-        
+        //END EXPERIMENTAL COMPUTATION------------------        
         for (int i = 0; i < N; i++){
             IPHASE = ISTATE[i];
             switch(IPHASE){
@@ -776,12 +752,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         }
         f_state << "\n";
         
-
-
-        f_depth2 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-        f_depth2 << DEPTH_smoothed << '\n';
-
-
         f_velocity << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
         f_velocity << V << '\n';
         f_state << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";

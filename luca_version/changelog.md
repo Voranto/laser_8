@@ -8,4 +8,6 @@ the condition branch back a layer, so the check is independent. This has been re
 no effect but removed it to make sure.
 
 5. In NVW NVS stuff the translation was I think incorrect, replaced a .GEQ. with a .GT.
+6. Some functions were badly ordered? Like the control flow was slightly reordered. Don't really think it had any effect, but 
+change it back for consistency sake.
 

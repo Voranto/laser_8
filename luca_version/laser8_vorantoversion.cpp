@@ -623,10 +623,9 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             * was being triggered in supercooled state. So a change was made to include correct supercooled 
             * computation at the surface
             * if (E[0] <= ELX1 && ISTATE[0] != 9){
+            * TODO: Clear up if this is actually needed
             */
-            double DEBUG_RATIO  = 1;
             
-            //double DEBUG_RATIO  = 1.3661;
             if (E[0] <= ELX1 && ISTATE[0] != 9){
                 DEPTH = 0.5*DX*E[0]/HX1;
             }
@@ -641,14 +640,8 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                             HX=HA;
                         } 
 
-                        DEPTH = DX * (i - 0.5) +  DEBUG_RATIO * DX * E[i]/ HX;
+                        DEPTH = DX * (i - 0.5) + DX * E[i]/ HX;
 
-                        break;
-                    }
-                    else if( ISTATE[i] == 4){
-                        IFRNT=i;
-                        HX=HC;
-                        DEPTH = DX * (i - 0.5) +  DEBUG_RATIO * DX * E[i]/ HX;
                         break;
                     }
                     else if(ISTATE[i] < 5){
@@ -661,33 +654,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             }
         }
 
-
-        depth_window.push(DEPTH);
-        sum_depth_window += DEPTH;
-
-        // 2. Maintain a fixed window size
-        if (depth_window.size() > WINDOW_SIZE) {
-            // Remove the oldest depth
-            sum_depth_window -= depth_window.front();
-            depth_window.pop();
-        }
-
-        // 3. Calculate the average of the current window
-        if (depth_window.size() > 0) {
-            double window_average = sum_depth_window / depth_window.size();
-
-            // 4. Update DEPTH_smoothed
-            // Only update once the window is full for a stable average.
-            if (depth_window.size() == WINDOW_SIZE) {
-                DEPTH_smoothed = window_average;
-            } else {
-                // During startup, before the window is full, use the raw depth
-                DEPTH_smoothed = DEPTH; 
-            }
-        }
-
-        
-        
         VAPRE = V;
         NCOUNT=NCOUNT+1;
         double SHAPEDEPMAX;
@@ -695,15 +661,9 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
 
 
 
-        if(NCOUNT >= (NVS-NVW/2)){
+        if(NCOUNT > (NVS-NVW/2)){
 
-            DEP2=DEP2+DEPTH_smoothed;
-                //* UPDATE MADE BY: Luca Siegel
-                //* The computation should be made for NVW windows , not NVW + 1 because the 
-                //* counter starts at 0 and ends at NVW - 1, so in total NVW
-                //*Update would be
-                //* if(NCOUNT == (NVS+NVW/2) - 1){
-                
+            DEP2=DEP2+DEPTH;
             if(NCOUNT == (NVS+NVW/2)){
                 
             

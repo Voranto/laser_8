@@ -693,51 +693,43 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
             }
             SUME=(SUME-ET0)*DX*RH0;
             SUMSX=SUMS1*DX*RH0;
-        } else {
-            for (int i = 0; i < N; i++){
-                IPHASE = ISTATE[i];
-                switch(IPHASE){
-                    case 1:
-                        NSTATE[i] = 'C';
-                        break;
-                    case 2:
-                        NSTATE[i] = 'P';
-                        break;
-                    case 3:
-                        NSTATE[i] = 'F';
-                        break;
-                    case 4:
-                        NSTATE[i] = 'A';
-                        break;
-                    case 5:
-                    case 6:
-                    case 7:
-                        NSTATE[i] = 'M';
-                        break;
-                    case 8:
-                        NSTATE[i] = 'L';
-                        break;
-                    case 9:
-                        NSTATE[i] = 'S';
-                        break;
-                }
-            }
         }
         
-
-        
-
-        
-        int NG = std::min(N,100);
-        
-        
-        
-
         if (TOUTG <  DTOUTG){
-            
             continue;
         }
         TOUTG = 0;
+        for (int i = 0; i < N; i++){
+            IPHASE = ISTATE[i];
+            switch(IPHASE){
+                case 1:
+                    NSTATE[i] = 'C';
+                    break;
+                case 2:
+                    NSTATE[i] = 'P';
+                    break;
+                case 3:
+                    NSTATE[i] = 'F';
+                    break;
+                case 4:
+                    NSTATE[i] = 'A';
+                    break;
+                case 5:
+                case 6:
+                case 7:
+                    NSTATE[i] = 'M';
+                    break;
+                case 8:
+                    NSTATE[i] = 'L';
+                    break;
+                case 9:
+                    NSTATE[i] = 'S';
+                    break;
+            }
+        }
+        
+        int NG = std::min(N,100);
+
         f_e << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
                 f_e << "IFRNT: " << IFRNT << " : ";
                 for (int i = 2; i <= NM1; i++){
@@ -796,8 +788,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                     << std::setw(2) << ISTATE[m2]
                     << "\n";
         }
-
-
         break;
     }
     return 0;  

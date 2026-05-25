@@ -121,10 +121,7 @@ int main(){
     */
     std::ofstream f_velocity("velocity.dat");
     std::ofstream f_e("e_chart.dat");
-    std::ofstream f_depth1("depth1.dat");
-
-
-    std::ofstream f_depth2("depth2.dat");
+    std::ofstream f_depth("depth.dat");
 
     std::ofstream f_temp("temp.dat");
     std::ofstream f_temp_diag("temp_diag.dat");
@@ -354,12 +351,8 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         << std::setw(15) << "VELOCITY" << std::endl;
     f_e << "    TIME (SEC)"
         << std::setw(15) << "E" << std::endl;
-    f_depth1 << "    TIME (SEC)"
-        << std::setw(15) << "DEPTH2222" << std::endl;
-
-
-    f_depth2 << "    TIME (SEC)"
-        << std::setw(15) << "DEPTH222" << std::endl;
+    f_depth << "    TIME (SEC)"
+        << std::setw(15) << "DEPTH" << std::endl;
 
 
     //Begin time loop
@@ -740,8 +733,8 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                 }
             }
         }
-        f_depth1 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-        f_depth1 << DEPTH << '\n';
+        f_depth << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
+        f_depth << DEPTH_smoothed << '\n';
 
 
         //END EXPERIMENTAL COMPUTATION------------------
@@ -833,11 +826,6 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         }
         f_state << "\n";
         
-
-
-        f_depth2 << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
-        f_depth2 << DEPTH_smoothed << '\n';
-
 
         f_velocity << " " << std::setw(13) << std::scientific << std::setprecision(5) << TIME << "   ";
         f_velocity << V << '\n';

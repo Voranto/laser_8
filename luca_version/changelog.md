@@ -13,3 +13,7 @@ change it back for consistency sake.
 
 Summary: The translation was quite a mess, the prints should be fixed at some point because they are quite messy but im going to try to first establish a ground truth and then make everything pretty
 
+## Finding amorphisation breakthrough
+1. Attempted adding the line of ISTATE[i] == 4 that I felt was missing. Wasn't successful at all in achieving amorphisation. Removing it for now
+2. Restoring the smoothing window didn't seem to affect anything
+3. The inequality with NVS also didn't change anything

@@ -11,3 +11,5 @@ no effect but removed it to make sure.
 6. Some functions were badly ordered? Like the control flow was slightly reordered. Don't really think it had any effect, but 
 change it back for consistency sake.
 
+Summary: The translation was quite a mess, the prints should be fixed at some point because they are quite messy but im going to try to first establish a ground truth and then make everything pretty
+

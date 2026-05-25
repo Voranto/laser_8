@@ -6,7 +6,7 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 # ---- STYLE ----
 # Set to -1 if you want to use the usual range (from minimum value found to maximum value found)
 DEPTH_MIN = -1
-DEPTH_MAX = -1
+DEPTH_MAX = 200
 TIME_MIN = -1
 TIME_MAX = -1
 

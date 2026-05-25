@@ -7,9 +7,8 @@ filename = "velocity.dat"
 # Load data: skip the header line
 dataVel = np.loadtxt(filename, skiprows=1)
 
-dataDep1 = np.loadtxt("depth1.dat", skiprows=1)
+dataDep = np.loadtxt("depth.dat", skiprows=1)
 
-dataDep2 = np.loadtxt("depth2.dat", skiprows=1)
 
 
 
@@ -27,20 +26,7 @@ axes[0,0].grid(True)
 axes[0,0].set_ylim(-8000,8000)
 
 
-axes[1,0].plot(dataDep1[:,0],dataDep1[:,1],color='red',label='Depth', marker='o', linestyle='-')
-
-
-axes[1,1].plot(dataDep2[:,0],dataDep2[:,1],color='blue',label='Depth 1', marker='o', linestyle='-')
-axes[1,1].plot(dataDep1[:,0],dataDep1[:,1],color='red',label='Depth 2', marker='o', linestyle='-')
-axes[1,1].set_xlabel('Time (s)')
-axes[1,1].set_ylabel('Depth2 and Depth1')
-axes[1,1].set_title('Depth2 vs Time')
-
-axes[0,1].plot(dataDep1[:,1],velocity, marker='o', linestyle='-')
-axes[0,1].set_ylim(-8000,8000)
-axes[0,1].set_xlabel('Depth')
-axes[0,1].set_ylabel('Velocity')
-axes[0,1].set_title('Depth vs Velocity')
+axes[1,0].plot(dataDep[:,0],dataDep[:,1],color='red',label='Depth', marker='o', linestyle='-')
 
 
 

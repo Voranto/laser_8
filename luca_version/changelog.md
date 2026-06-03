@@ -13,3 +13,4 @@ change it back for consistency sake.
 
 Summary: The translation was quite a mess, the prints should be fixed at some point because they are quite messy but im going to try to first establish a ground truth and then make everything pretty
 
+CURRENT status. I've tried looking for middle points between ground truth and my version to find the point that determines amorphisation, haven't been successful. Will try again in the future.

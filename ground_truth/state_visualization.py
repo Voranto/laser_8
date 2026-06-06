@@ -146,7 +146,7 @@ im1 = ax1.pcolormesh(times, depth_reg_edges, data_reg, cmap=cmap, norm=norm)
 ax1.invert_yaxis()                           # surface (0 nm) at top
 ax1.set_xlabel("Time (ns)")
 ax1.set_ylabel("Depth (nm)")
-ax1.set_title("State Evolution")
+ax1.set_title("State Evolution Ground truth")
 
 # Mark the boundary with a dashed line at the bottom
 ax1.axhline(depth_reg[-1], color="black", lw=1.2, ls="--", alpha=0.6)

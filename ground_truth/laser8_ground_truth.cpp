@@ -125,6 +125,8 @@ int main(){
 
     std::ofstream f_temp("temp.dat");
     std::ofstream f_temp_diag("temp_diag.dat");
+    std::ofstream f_cond_diag("conductivity_diag.dat");
+    std::ofstream f_energy_diag("energy_diag.dat");
     std::ofstream f_pulse("pulse_shape.dat");
 
 
@@ -161,7 +163,7 @@ int main(){
     double SUMS1 = 0.0;
     double PULDUR = 2.0 * TH;
 
-    double KAKL = (0.02 + 0.4) * 0.5;
+    double KAKL = (0.02 + 0.5) * 0.5;
     double KCKL = (0.216 + 0.5) * 0.5;
     double KFKL = (0.1e-1 + 0.5) * 0.5;
 
@@ -677,6 +679,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         if(T[NMAX - 1] > 1000) CPNMAX=1.e0;
 
         DT=RATDX2*CPNMAX/K[N-1];
+        
         double SUME;
         double SUMSX;
         int NXM1;
@@ -751,11 +754,16 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
 
     // --- WRITE temp_diag.dat ---
         f_temp_diag << " " << std::setw(20) << std::scientific << std::setprecision(14) << TIME << "   ";
+        f_cond_diag << " " << std::setw(20) << std::scientific << std::setprecision(14) << TIME << "   ";
+        f_energy_diag << " " << std::setw(20) << std::scientific << std::setprecision(14) << TIME << "   ";
         for (int m4 = 0; m4 < N; ++m4) {
             f_temp_diag << std::setw(7) << std::scientific << std::setprecision(2) << T[m4] << " ";
+            f_cond_diag << std::setw(7) << std::scientific << std::setprecision(2) << K[m4] << " ";
+            f_energy_diag << std::setw(7) << std::scientific << std::setprecision(2) << E[m4] << " ";
         }
         f_temp_diag << "\n";
-        
+        f_cond_diag << "\n";
+        f_energy_diag << "\n";
         if (TIME < PULDUR){ 
             continue; 
         }

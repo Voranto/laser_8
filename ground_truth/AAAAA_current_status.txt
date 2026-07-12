@@ -1,0 +1,6 @@
+Current status. Trying to fix the weird Energy/conductivity/temperature oscillations when VMAX is under 3500.
+
+The issue seems to stem from supercooling or some mushy state. Basically when VMAX is under that threshold, the 
+V > -VMAX doesnt apply so it doesn't break, allowing it to enter states 5(mushy4) and 9(supercooled). After that the 
+depth plot has spikes, which makes the velocity plot completely broken. Also around then, the energy, conductivity
+and thermal oscillations start. Have attempted multiple fixes, none successful.

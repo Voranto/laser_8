@@ -110,7 +110,7 @@ int main(){
     const int MATRIX_SIZE = 250;
     int pulse_counter = 0;
 
-    std::vector<char> NSTATE(MATRIX_SIZE);
+    std::vector<char> NSTATE(MATRIX_SIZE, 'C');
     std::vector<double> K(MATRIX_SIZE), E(MATRIX_SIZE), T(MATRIX_SIZE), S(MATRIX_SIZE);
     std::vector<int> ISTATE(MATRIX_SIZE);
     std::vector<double> TIMER1(MATRIX_SIZE, 0.0), TIMER2(MATRIX_SIZE, 0.0);
@@ -741,7 +741,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
                 f_e << "\n";
 
         
-        for (int m1 = 0; m1 < N; ++m1) {
+        for (int m1 = 0; m1 < NMAXP; ++m1) {
             f_state << NSTATE[m1];   // single character
             f_state << " ";           // space between characters
         }
@@ -756,7 +756,7 @@ C  BY INTEGRATING [ALPHA EXP(-ALPHA*X)] OVER EACH CELL
         f_temp_diag << " " << std::setw(20) << std::scientific << std::setprecision(14) << TIME << "   ";
         f_cond_diag << " " << std::setw(20) << std::scientific << std::setprecision(14) << TIME << "   ";
         f_energy_diag << " " << std::setw(20) << std::scientific << std::setprecision(14) << TIME << "   ";
-        for (int m4 = 0; m4 < N; ++m4) {
+        for (int m4 = 0; m4 < NMAXP; ++m4) {
             f_temp_diag << std::setw(7) << std::scientific << std::setprecision(2) << T[m4] << " ";
             f_cond_diag << std::setw(7) << std::scientific << std::setprecision(2) << K[m4] << " ";
             f_energy_diag << std::setw(7) << std::scientific << std::setprecision(2) << E[m4] << " ";

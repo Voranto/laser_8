@@ -96,8 +96,8 @@ times = np.array(time_list, dtype=float)
 depth = np.array(depth_list, dtype=float)
 
 # ---- APPLY CUSTOM RANGES ----
-time_min_plot = TIME_MIN if TIME_MIN != -1 else times[:-12].min()
-time_max_plot = TIME_MAX if TIME_MAX != -1 else times[:-12].max()
+time_min_plot = TIME_MIN if TIME_MIN != -1 else times.min()
+time_max_plot = TIME_MAX if TIME_MAX != -1 else times.max()
 depth_min_plot = DEPTH_MIN if DEPTH_MIN != -1 else depth[:-12].min()
 depth_max_plot = DEPTH_MAX if DEPTH_MAX != -1 else depth[:-12].max()
 print("The range for the time is: (",TIME_MIN if TIME_MIN != -1 else times[:-12].min() ,",",TIME_MAX if TIME_MAX != -1 else times[:-12].max(),")" )
